@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
 import path from 'path';
 import { getDb } from '../db/database';
+import { computeMarkerStatus } from '../db/labMarkerStatus';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 export const examsRouter = Router();
@@ -110,15 +111,32 @@ examsRouter.post('/:patientId/exams', upload.single('pdf'), (req: AuthRequest, r
   if (markers) {
     const parsedMarkers = typeof markers === 'string' ? JSON.parse(markers) : markers;
     const insertMarker = db.prepare(`
-      INSERT INTO lab_markers (id, exam_id, marker_name, marker_category, value, unit, ref_min, ref_max, optimal_min, optimal_max)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO lab_markers (id, exam_id, marker_name, marker_category, value, unit, ref_min, ref_max, optimal_min, optimal_max, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const insertMany = db.transaction((ms: any[]) => {
       for (const m of ms) {
-        insertMarker.run(uuidv4(), id, m.marker_name, m.marker_category || null,
-                         m.value, m.unit, m.ref_min || null, m.ref_max || null,
-                         m.optimal_min || null, m.optimal_max || null);
+        const status = computeMarkerStatus(
+          m.value,
+          m.ref_min ?? null,
+          m.ref_max ?? null,
+          m.optimal_min ?? null,
+          m.optimal_max ?? null
+        );
+        insertMarker.run(
+          uuidv4(),
+          id,
+          m.marker_name,
+          m.marker_category || null,
+          m.value,
+          m.unit,
+          m.ref_min ?? null,
+          m.ref_max ?? null,
+          m.optimal_min ?? null,
+          m.optimal_max ?? null,
+          status
+        );
       }
     });
     insertMany(parsedMarkers);
