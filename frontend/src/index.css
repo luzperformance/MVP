@@ -1,0 +1,306 @@
+/* ============================================
+   Prontuário LuzPerformance — Design Tokens
+   Mesma paleta de cores do c:/appsite
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+/* === CSS Variables (Design Tokens) === */
+:root {
+  --luz-navy:        #0d1f33;
+  --luz-navy-light:  #1a3a5c;
+  --luz-navy-medium: #142a42;
+  --luz-navy-dark:   #0a1828;
+  --luz-gold:        #c9a44a;
+  --luz-gold-light:  #d4b55a;
+  --luz-gold-dark:   #b8933a;
+  --luz-white:       #ffffff;
+  --luz-gray:        #e0e0e0;
+  --luz-gray-dark:   #a0a0a0;
+  --luz-success:     #22c55e;
+  --luz-warning:     #f59e0b;
+  --luz-danger:      #ef4444;
+  --luz-info:        #3b82f6;
+
+  --sidebar-width:   256px;
+  --header-height:   64px;
+  --border-radius:   12px;
+  --transition:      all 0.2s ease;
+}
+
+/* === Reset === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'Montserrat', sans-serif;
+  background-color: var(--luz-navy);
+  color: var(--luz-gray);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { height: 100%; }
+
+/* === Typography === */
+.font-display { font-family: 'Orbitron', sans-serif; }
+
+h1, h2, h3, h4 { color: var(--luz-white); }
+
+/* Gold gradient headings */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #f3d077, #c9a44a, #8a6d29);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* === Layout === */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--luz-navy-dark);
+  border-right: 1px solid rgba(201, 164, 74, 0.15);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--luz-navy);
+}
+
+.page-header {
+  height: var(--header-height);
+  background: var(--luz-navy-medium);
+  border-bottom: 1px solid rgba(201, 164, 74, 0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+}
+
+.page-content {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* === Cards & Surfaces === */
+.card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--border-radius);
+  backdrop-filter: blur(8px);
+  padding: 24px;
+  transition: var(--transition);
+}
+
+.card:hover { border-color: rgba(201, 164, 74, 0.3); }
+
+.card-gold {
+  border-color: rgba(201, 164, 74, 0.3);
+  box-shadow: 0 0 30px rgba(201, 164, 74, 0.06);
+}
+
+/* === Buttons === */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--luz-gold);
+  color: var(--luz-navy);
+  box-shadow: 0 4px 15px rgba(201, 164, 74, 0.3);
+}
+.btn-primary:hover {
+  background: var(--luz-gold-light);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(201, 164, 74, 0.4);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--luz-gold);
+  border: 2px solid var(--luz-gold);
+}
+.btn-secondary:hover {
+  background: var(--luz-gold);
+  color: var(--luz-navy);
+}
+
+.btn-ghost {
+  background: rgba(255,255,255,0.05);
+  color: var(--luz-gray);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--luz-white); }
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-lg { padding: 14px 28px; font-size: 16px; }
+
+/* === Form Elements === */
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--luz-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--luz-white);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  transition: var(--transition);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: rgba(201, 164, 74, 0.5);
+  box-shadow: 0 0 0 3px rgba(201, 164, 74, 0.1);
+}
+
+.form-input::placeholder { color: var(--luz-gray-dark); }
+
+textarea.form-input { resize: vertical; min-height: 100px; }
+
+/* === Status Badges === */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-normal  { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+.badge-baixo   { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.badge-alto    { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.badge-subotimo { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+
+/* === Sidebar Navigation === */
+.sidebar-logo {
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(201, 164, 74, 0.15);
+}
+
+.sidebar-logo-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--luz-gold);
+  letter-spacing: 0.1em;
+}
+
+.nav-section { padding: 8px 0; }
+
+.nav-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--luz-gray-dark);
+  padding: 8px 16px 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: var(--luz-gray);
+  cursor: pointer;
+  border-radius: 8px;
+  margin: 1px 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.nav-item:hover { background: rgba(255,255,255,0.06); color: var(--luz-white); }
+
+.nav-item.active {
+  background: rgba(201, 164, 74, 0.15);
+  color: var(--luz-gold);
+  border: 1px solid rgba(201, 164, 74, 0.2);
+}
+
+/* === Animations === */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 15px rgba(201,164,74,0.3); } 50% { box-shadow: 0 0 30px rgba(201,164,74,0.6); } }
+
+.animate-fade-in { animation: fadeIn 0.3s ease; }
+.animate-fade-in-up { animation: fadeInUp 0.4s ease; }
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+/* Stagger children */
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 300ms; }
+
+/* === Scrollbar === */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--luz-navy-dark); }
+::-webkit-scrollbar-thumb { background: rgba(201,164,74,0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(201,164,74,0.5); }
+
+/* === Grid Background Pattern === */
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(201,164,74,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,164,74,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* === Lab Status Colors (for Recharts reference lines) === */
+.ref-normal { color: var(--luz-success); }
+.ref-warning { color: var(--luz-warning); }
+.ref-danger { color: var(--luz-danger); }
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .sidebar { width: 0; position: fixed; z-index: 50; }
+  .sidebar.open { width: var(--sidebar-width); }
+  .page-content { padding: 16px; }
+}
