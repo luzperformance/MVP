@@ -9,8 +9,12 @@ const DashboardPage    = lazy(() => import('./pages/DashboardPage'));
 const PatientsPage     = lazy(() => import('./pages/PatientsPage'));
 const PatientDetailPage = lazy(() => import('./pages/PatientDetailPage'));
 const NewRecordPage    = lazy(() => import('./pages/NewRecordPage'));
-const ExamDashboardPage = lazy(() => import('./pages/ExamDashboardPage'));
-const SetupPage        = lazy(() => import('./pages/SetupPage'));
+const ExamDashboardPage   = lazy(() => import('./pages/ExamDashboardPage'));
+const FinanceDashboardPage = lazy(() => import('./pages/FinanceDashboardPage'));
+const AgendaPage          = lazy(() => import('./pages/AgendaPage'));
+const ConsultasPage      = lazy(() => import('./pages/ConsultasPage'));
+const NewPatientPage      = lazy(() => import('./pages/NewPatientPage'));
+const SetupPage           = lazy(() => import('./pages/SetupPage'));
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = useAuthStore(s => s.token);
@@ -35,9 +39,13 @@ export default function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="patients" element={<PatientsPage />} />
+            <Route path="patients/new" element={<NewPatientPage />} />
             <Route path="patients/:id" element={<PatientDetailPage />} />
             <Route path="patients/:id/records/new" element={<NewRecordPage />} />
             <Route path="patients/:id/exams" element={<ExamDashboardPage />} />
+            <Route path="finance" element={<FinanceDashboardPage />} />
+            <Route path="consultas" element={<ConsultasPage />} />
+            <Route path="agenda" element={<AgendaPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

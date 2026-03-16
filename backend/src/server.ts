@@ -11,6 +11,9 @@ import { recordsRouter } from './routes/records';
 import { examsRouter } from './routes/exams';
 import { photosRouter } from './routes/photos';
 import { transcriptionRouter } from './routes/transcription';
+import { financeRouter } from './routes/finance';
+import { calendarRouter } from './routes/calendar';
+import { consultasRouter } from './routes/consultas';
 import { lgpdMiddleware } from './middleware/lgpd';
 import { logger } from './services/logger';
 
@@ -49,6 +52,9 @@ app.use('/api/patients', recordsRouter);
 app.use('/api/patients', examsRouter);
 app.use('/api/patients', photosRouter);
 app.use('/api/ai', transcriptionRouter);
+app.use('/api/finance', financeRouter);
+app.use('/api/calendar', calendarRouter);
+app.use('/api/consultas', consultasRouter);
 
 // === HEALTH CHECK ===
 app.get('/api/health', (_req, res) => {
