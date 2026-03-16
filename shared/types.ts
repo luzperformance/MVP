@@ -31,6 +31,18 @@ export interface Record {
   created_at: string;
 }
 
+/** Item da lista de consultas (record + patient_name) */
+export interface ConsultaListItem {
+  id: string;
+  patient_id: string;
+  patient_name: string;
+  type: Record['type'];
+  source: Record['source'];
+  consultation_date: string;
+  duration_minutes?: number;
+  created_at: string;
+}
+
 export interface Photo {
   id: string;
   patient_id: string;
@@ -96,4 +108,48 @@ export interface SOAPNote {
 
 export interface ApiError {
   error: string;
+}
+
+// Finance dashboard
+export interface FinanceSummaryResponse {
+  kpis: {
+    revenueMonth: number;
+    expenseMonth: number;
+    resultMonth: number;
+    revenueTotal: number;
+    expenseTotal: number;
+    resultTotal: number;
+  };
+  monthly: { month: string; revenue: number; expense: number; result: number }[];
+  periodMonths: number;
+}
+
+export interface FinanceEntry {
+  id: string;
+  type: 'revenue' | 'expense';
+  category: string;
+  amount: number;
+  entry_date: string;
+  description?: string;
+  created_at: string;
+}
+
+// Calendar / Agenda (Google Calendar API)
+export interface CalendarEventItem {
+  id: string;
+  summary: string;
+  description?: string;
+  location?: string;
+  start: string;
+  end: string;
+  htmlLink?: string;
+  isAllDay: boolean;
+}
+
+export interface CalendarEventsResponse {
+  configured: boolean;
+  events: CalendarEventItem[];
+  message?: string;
+  error?: string;
+  timeZone?: string;
 }

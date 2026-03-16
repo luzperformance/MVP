@@ -40,15 +40,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'var(--luz-navy)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 24,
-    }}>
-      <div style={{ width: '100%', maxWidth: 400 }}>
+    <div className="login-page">
+      <div className="login-page-inner">
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
@@ -119,9 +112,9 @@ export default function LoginPage() {
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
 
-          <p style={{ fontSize: 11, color: '#a0a0a0', textAlign: 'center', marginTop: 16 }}>
+          <p style={{ fontSize: 12, color: 'var(--luz-gray-dark)', textAlign: 'center', marginTop: 16 }}>
             Primeiro acesso?{' '}
-            <a href="/setup" style={{ color: '#c9a44a', textDecoration: 'none' }}>
+            <a href="/setup" className="login-setup-link">
               Configurar conta
             </a>
           </p>

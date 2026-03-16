@@ -25,8 +25,8 @@ export default function SetupPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--luz-navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div style={{ width: '100%', maxWidth: 440 }}>
+    <div className="login-page">
+      <div className="login-page-inner setup-page-inner">
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <Activity size={40} color="#c9a44a" style={{ marginBottom: 16 }} />
           <h1 style={{ fontFamily: 'Orbitron', fontSize: 20, color: '#c9a44a' }}>PRIMEIRO ACESSO</h1>

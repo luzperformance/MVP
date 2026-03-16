@@ -99,7 +99,8 @@ export default function ExamDashboardPage() {
                 <h3 className="exam-section-title" style={{ marginBottom: 20 }}>
                   Linha do Tempo
                 </h3>
-                <ResponsiveContainer width="100%" height={380}>
+                <div className="exam-chart-wrap">
+                <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                     <XAxis dataKey="date" stroke="#a0a0a0" tick={{ fontSize: 11 }} />
@@ -129,6 +130,7 @@ export default function ExamDashboardPage() {
                     ))}
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               </div>
             )}
 
