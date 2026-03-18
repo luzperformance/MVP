@@ -5,6 +5,8 @@ export interface Doctor {
   name: string;
   email: string;
   crm: string;
+  can_access_records?: boolean;
+  can_edit_agenda?: boolean;
 }
 
 export interface Patient {

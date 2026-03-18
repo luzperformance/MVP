@@ -7,8 +7,8 @@ import AlertsWidget from '../components/AlertsWidget';
 const actions = [
   { to: '/patients',     icon: Users,       label: 'Pacientes',   desc: 'Ver todos os pacientes' },
   { to: '/patients/new', icon: Plus,        label: 'Novo Paciente', desc: 'Cadastrar paciente' },
-  { to: '/consultas',    icon: Stethoscope, label: 'Consultas',   desc: 'Consultas do dia' },
-  { to: '/agenda',       icon: Calendar,    label: 'Agenda',      desc: 'Próximos 14 dias' },
+  { to: '/consultas',    icon: Stethoscope, label: 'Consultas',   desc: 'Agenda da semana' },
+  { to: '/agenda',       icon: Calendar,    label: 'Mês',         desc: 'Visão mensal' },
   { to: '/finance',      icon: DollarSign,  label: 'Financeiro',  desc: 'Receitas e despesas' },
   { to: '/crm/leads',    icon: Target,      label: 'CRM',         desc: 'Leads e funil de vendas' },
 ];

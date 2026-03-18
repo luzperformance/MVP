@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, MapPin, ExternalLink, LayoutGrid, List } from 'lucide-react';
+import { Calendar, Clock, MapPin, ExternalLink, LayoutGrid, List, Plus, Settings } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import type { CalendarEventsResponse, CalendarEventItem } from '@shared/types';
 
-const GCAL_EMBED_URL =
-  'https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=America%2FSao_Paulo&showPrint=0&title=Consult%C3%B3rio&src=luzardi18%40gmail.com&color=%234285f4';
+const GCAL_EMBED_URL = 
+  'https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=America%2FSao_Paulo&showPrint=0&title=Consult%C3%B3rio&mode=MONTH&src=luzardi18%40gmail.com&color=%234285f4';
 
 function formatEventDate(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', {
@@ -40,6 +40,8 @@ type ViewMode = 'calendario' | 'lista';
 
 export default function AgendaPage() {
   const token = useAuthStore(s => s.token);
+  const doctor = useAuthStore(s => s.doctor);
+  const canEdit = !!doctor?.can_edit_agenda;
   const [view, setView] = useState<ViewMode>('calendario');
   const [data, setData] = useState<CalendarEventsResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,9 +85,9 @@ export default function AgendaPage() {
           <Calendar size={20} color="var(--luz-gold)" aria-hidden />
           <div>
             <div className="font-display" style={{ fontWeight: 700, color: 'var(--luz-white)', fontSize: 16, letterSpacing: '0.02em' }}>
-              Agenda
+              Mês
             </div>
-            <div style={{ fontSize: 12, color: 'var(--luz-gray-dark)' }}>Consultório — Google Calendar</div>
+            <div style={{ fontSize: 12, color: 'var(--luz-gray-dark)' }}>Consultório — Visão Mensal</div>
           </div>
         </div>
 
@@ -155,16 +157,48 @@ export default function AgendaPage() {
                   GOOGLE CALENDAR
                 </span>
               </div>
-              <a
-                href="https://calendar.google.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-ghost btn-sm"
-                style={{ fontSize: 12, padding: '6px 12px', minHeight: 'auto' }}
-              >
-                <ExternalLink size={13} aria-hidden />
-                Abrir
-              </a>
+              
+              {canEdit ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <a
+                    href="https://calendar.google.com/calendar/r/eventedit?text=Compromisso%3A+"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline"
+                    style={{ 
+                      fontSize: 12, padding: '7px 14px', minHeight: 'auto',
+                      border: '1px solid var(--luz-gold)', color: 'var(--luz-gold)',
+                      borderRadius: 6, transition: 'all 0.3s ease',
+                      fontWeight: 600, boxShadow: '0 4px 15px rgba(201, 164, 74, 0.15)'
+                    }}
+                  >
+                    <Plus size={14} aria-hidden style={{ marginRight: 6 }} />
+                    Novo
+                  </a>
+                  <a
+                    href="https://calendar.google.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-ghost btn-sm"
+                    style={{ 
+                      fontSize: 12, padding: '7px 14px', minHeight: 'auto',
+                      border: '1px solid rgba(201,164,74,0.2)',
+                      borderRadius: 6, transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <Settings size={14} aria-hidden style={{ marginRight: 6 }} />
+                    Gerenciar
+                  </a>
+                </div>
+              ) : (
+                <div style={{ 
+                  fontSize: 11, color: 'var(--luz-gray-dark)', 
+                  border: '1px dashed rgba(255,255,255,0.1)', 
+                  padding: '6px 12px', borderRadius: 4, letterSpacing: '0.04em'
+                }}>
+                  Modo Visualização
+                </div>
+              )}
             </div>
 
             {/* iframe */}

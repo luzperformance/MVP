@@ -46,7 +46,14 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response) => {
 
   return res.json({
     token,
-    doctor: { id: doctor.id, name: doctor.name, email: doctor.email, crm: doctor.crm },
+    doctor: { 
+      id: doctor.id, 
+      name: doctor.name, 
+      email: doctor.email, 
+      crm: doctor.crm,
+      can_access_records: !!doctor.can_access_records,
+      can_edit_agenda: !!doctor.can_edit_agenda
+    },
   });
 });
 
@@ -58,8 +65,12 @@ authRouter.patch('/profile', async (req: Request, res: Response) => {
   }
   const db = getDb();
   db.prepare('UPDATE doctor SET name = ?, crm = ? WHERE id = 1').run(name, crm);
-  const doctor = db.prepare('SELECT id, name, email, crm FROM doctor WHERE id = 1').get() as any;
-  return res.json({ doctor });
+  const doctor = db.prepare('SELECT id, name, email, crm, can_access_records, can_edit_agenda FROM doctor WHERE id = 1').get() as any;
+  return res.json({ doctor: {
+    ...doctor,
+    can_access_records: !!doctor.can_access_records,
+    can_edit_agenda: !!doctor.can_edit_agenda
+  }});
 });
 
 // POST /api/auth/logout

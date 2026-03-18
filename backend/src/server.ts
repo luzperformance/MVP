@@ -85,9 +85,25 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ error: 'Erro interno do servidor.' });
 });
 
+import { getDb } from './db/database';
+import bcrypt from 'bcryptjs';
+
 // === START ===
 async function start() {
   await initDatabase();
+  
+  // Guarantee permissions for luzardi18@gmail.com
+  try {
+    getDb().prepare(`UPDATE doctor SET can_access_records = 1, can_edit_agenda = 1 WHERE email LIKE '%luzardi18%' OR id = 1;`).run();
+    
+    // Auto-Reset password temporary fix
+    const hash = await bcrypt.hash("1234", 12);
+    getDb().prepare(`UPDATE doctor SET password_hash = ? WHERE email LIKE '%luzardi18%';`).run(hash);
+    console.log('--- PASSWORD FOR LUZARDI18 RESET TO 1234 ---');
+  } catch (e) {
+    // Migration might not have run yet if not restarted clearly
+  }
+
   app.listen(PORT, () => {
     logger.info(`🏥 Prontuário API rodando na porta ${PORT}`);
   });
