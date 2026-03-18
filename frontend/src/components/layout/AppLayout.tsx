@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import {
   LayoutDashboard, Users, LogOut, Activity, Menu, X, DollarSign, Calendar, Stethoscope, PanelLeftClose, PanelLeft,
-  UserPlus, Package,
+  UserPlus, Package, ClipboardList,
 } from 'lucide-react';
 
 const SIDEBAR_COLLAPSED_KEY = 'prontuario-sidebar-collapsed';
@@ -17,6 +17,7 @@ const navItems = [
 ];
 
 const crmItems = [
+  { to: '/gestao', icon: ClipboardList, label: 'Gestão' },
   { to: '/crm/leads', icon: UserPlus, label: 'Leads' },
   { to: '/crm/assets', icon: Package, label: 'Ativos' },
 ];

@@ -231,3 +231,57 @@ export interface CrmSummary {
   convertedThisMonth: number;
   pendingFollowups: number;
 }
+
+// Gestão — Tabela da secretária
+export type PackageType = 'mensal' | 'trimestral' | 'semestral' | 'anual';
+export type MgmtStatus = 'ativo' | 'inativo';
+
+export interface PatientManagement {
+  id: string;
+  name: string;
+  cpf_encrypted?: string;
+  birth_date?: string;
+  gender?: string;
+  email?: string;
+  phone?: string;
+  phone2?: string;
+  address?: string;
+  cep?: string;
+  city?: string;
+  state?: string;
+  insurance_name?: string;
+  insurance_plan?: string;
+  first_consultation?: string;
+  last_consultation?: string;
+  next_consultation?: string;
+  last_prescription?: string;
+  last_exam?: string;
+  mgmt_status?: MgmtStatus;
+  uses_ea?: boolean;
+  wants_children?: boolean;
+  observations?: string;
+  notes?: string;
+  origin?: string;
+  package_type?: PackageType;
+  monthly_value?: number;
+  payment_date?: string;
+  needs_nf?: boolean;
+  contract_done?: boolean;
+  contract_start?: string;
+  contract_end?: string;
+  contract_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GestaoSummary {
+  total: number;
+  ativos: number;
+  inativos: number;
+  mrrTotal: number;
+  withContract: number;
+  pendingNF: number;
+  upcomingConsultations: number;
+  byPackage: { type: string; count: number }[];
+  byState: { state: string; count: number }[];
+}

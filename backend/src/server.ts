@@ -16,6 +16,7 @@ import { calendarRouter } from './routes/calendar';
 import { consultasRouter } from './routes/consultas';
 import { leadsRouter } from './routes/leads';
 import { assetsRouter } from './routes/assets';
+import { gestaoRouter } from './routes/gestao';
 import { lgpdMiddleware } from './middleware/lgpd';
 import { logger } from './services/logger';
 
@@ -59,6 +60,7 @@ app.use('/api/calendar', calendarRouter);
 app.use('/api/consultas', consultasRouter);
 app.use('/api/leads', leadsRouter);
 app.use('/api/assets', assetsRouter);
+app.use('/api/gestao', gestaoRouter);
 
 // === HEALTH CHECK ===
 app.get('/api/health', (_req, res) => {

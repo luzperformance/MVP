@@ -18,6 +18,7 @@ const SetupPage            = lazy(() => import('./pages/SetupPage'));
 const LeadsPage            = lazy(() => import('./pages/LeadsPage'));
 const LeadDetailPage       = lazy(() => import('./pages/LeadDetailPage'));
 const AssetsPage           = lazy(() => import('./pages/AssetsPage'));
+const GestaoPage           = lazy(() => import('./pages/GestaoPage'));
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const token = useAuthStore(s => s.token);
@@ -90,6 +91,7 @@ export default function App() {
               <Route path="crm/leads" element={<LeadsPage />} />
               <Route path="crm/leads/:id" element={<LeadDetailPage />} />
               <Route path="crm/assets" element={<AssetsPage />} />
+              <Route path="gestao" element={<GestaoPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
