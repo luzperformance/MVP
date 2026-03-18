@@ -15,6 +15,9 @@ const AgendaPage           = lazy(() => import('./pages/AgendaPage'));
 const ConsultasPage        = lazy(() => import('./pages/ConsultasPage'));
 const NewPatientPage       = lazy(() => import('./pages/NewPatientPage'));
 const SetupPage            = lazy(() => import('./pages/SetupPage'));
+const LeadsPage            = lazy(() => import('./pages/LeadsPage'));
+const LeadDetailPage       = lazy(() => import('./pages/LeadDetailPage'));
+const AssetsPage           = lazy(() => import('./pages/AssetsPage'));
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const token = useAuthStore(s => s.token);
@@ -84,6 +87,9 @@ export default function App() {
               <Route path="finance" element={<FinanceDashboardPage />} />
               <Route path="consultas" element={<ConsultasPage />} />
               <Route path="agenda" element={<AgendaPage />} />
+              <Route path="crm/leads" element={<LeadsPage />} />
+              <Route path="crm/leads/:id" element={<LeadDetailPage />} />
+              <Route path="crm/assets" element={<AssetsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>

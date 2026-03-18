@@ -14,6 +14,8 @@ import { transcriptionRouter } from './routes/transcription';
 import { financeRouter } from './routes/finance';
 import { calendarRouter } from './routes/calendar';
 import { consultasRouter } from './routes/consultas';
+import { leadsRouter } from './routes/leads';
+import { assetsRouter } from './routes/assets';
 import { lgpdMiddleware } from './middleware/lgpd';
 import { logger } from './services/logger';
 
@@ -55,6 +57,8 @@ app.use('/api/ai', transcriptionRouter);
 app.use('/api/finance', financeRouter);
 app.use('/api/calendar', calendarRouter);
 app.use('/api/consultas', consultasRouter);
+app.use('/api/leads', leadsRouter);
+app.use('/api/assets', assetsRouter);
 
 // === HEALTH CHECK ===
 app.get('/api/health', (_req, res) => {

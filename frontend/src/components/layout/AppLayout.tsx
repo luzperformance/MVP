@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import {
-  LayoutDashboard, Users, LogOut, Activity, Menu, X, DollarSign, Calendar, Stethoscope, PanelLeftClose, PanelLeft
+  LayoutDashboard, Users, LogOut, Activity, Menu, X, DollarSign, Calendar, Stethoscope, PanelLeftClose, PanelLeft,
+  UserPlus, Package,
 } from 'lucide-react';
 
 const SIDEBAR_COLLAPSED_KEY = 'prontuario-sidebar-collapsed';
@@ -13,6 +14,11 @@ const navItems = [
   { to: '/consultas', icon: Stethoscope, label: 'Consultas' },
   { to: '/agenda', icon: Calendar, label: 'Agenda' },
   { to: '/finance', icon: DollarSign, label: 'Financeiro' },
+];
+
+const crmItems = [
+  { to: '/crm/leads', icon: UserPlus, label: 'Leads' },
+  { to: '/crm/assets', icon: Package, label: 'Ativos' },
 ];
 
 export default function AppLayout() {
@@ -110,6 +116,21 @@ export default function AppLayout() {
           <div className="nav-section">
             <div className="nav-section-title">Menu</div>
             {navItems.map(({ to, icon: Icon, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+                onClick={closeSidebar}
+                title={sidebarCollapsed ? label : undefined}
+              >
+                <Icon size={20} aria-hidden />
+                <span className="nav-item-label">{label}</span>
+              </NavLink>
+            ))}
+          </div>
+          <div className="nav-section">
+            <div className="nav-section-title">CRM</div>
+            {crmItems.map(({ to, icon: Icon, label }) => (
               <NavLink
                 key={to}
                 to={to}
