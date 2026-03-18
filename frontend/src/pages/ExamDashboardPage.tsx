@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -6,28 +6,47 @@ import {
 } from 'recharts';
 import { ArrowLeft, FlaskConical, TrendingUp } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import type { TimelineResponse } from '../../shared/types';
+import type { TimelineResponse } from '@shared/types';
 
 const LINE_COLORS = ['#c9a44a','#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4'];
 
 export default function ExamDashboardPage() {
   const { id: patientId } = useParams();
-  const { token } = useAuthStore();
+  const token = useAuthStore(s => s.token);
 
   const [data, setData] = useState<TimelineResponse | null>(null);
   const [selectedMarkers, setSelectedMarkers] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchTimeline = useCallback(async () => {
-    const markers = [...selectedMarkers].join(',');
-    const url = `/api/patients/${patientId}/exams/timeline${markers ? `?markers=${markers}` : ''}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const json = await res.json();
-    setData(json);
-    setLoading(false);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setLoading(true);
+    try {
+      const markers = [...selectedMarkers].join(',');
+      const url = `/api/patients/${patientId}/exams/timeline${markers ? `?markers=${markers}` : ''}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+      });
+      if (!res.ok) { setData(null); return; }
+      const json = await res.json();
+      setData(json);
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
   }, [patientId, token, selectedMarkers]);
 
-  useEffect(() => { fetchTimeline(); }, [fetchTimeline]);
+  useEffect(() => {
+    fetchTimeline();
+    return () => { abortRef.current?.abort(); };
+  }, [fetchTimeline]);
 
   // Toggle marker selection
   const toggleMarker = (name: string) => {
@@ -103,8 +122,8 @@ export default function ExamDashboardPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="date" stroke="#a0a0a0" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="#a0a0a0" tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="date" stroke="var(--luz-gray-dark)" tick={{ fontSize: 11 }} />
+                    <YAxis stroke="var(--luz-gray-dark)" tick={{ fontSize: 11 }} />
                     <Tooltip
                       contentStyle={{
                         background: 'var(--luz-navy)',

@@ -1,12 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-interface Doctor {
-  id: number;
-  name: string;
-  email: string;
-  crm: string;
-}
+import type { Doctor } from '@shared/types';
 
 interface AuthState {
   token: string | null;

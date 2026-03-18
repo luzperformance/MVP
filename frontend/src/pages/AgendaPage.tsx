@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Calendar, Clock, MapPin, ExternalLink } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import type { CalendarEventsResponse, CalendarEventItem } from '../../shared/types';
+import type { CalendarEventsResponse, CalendarEventItem } from '@shared/types';
 
 function formatEventDate(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Wand2, Save, Loader } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import type { SOAPNote } from '../../shared/types';
+import type { SOAPNote } from '@shared/types';
 
 type Source = 'manual' | 'transcricao' | 'resumo';
 

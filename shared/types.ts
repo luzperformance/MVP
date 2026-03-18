@@ -1,5 +1,12 @@
 // Types compartilhados — Prontuário LuzPerformance
 
+export interface Doctor {
+  id: number;
+  name: string;
+  email: string;
+  crm: string;
+}
+
 export interface Patient {
   id: string;
   name: string;

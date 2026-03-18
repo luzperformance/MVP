@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import { TrendingUp, DollarSign, ArrowDownCircle, ArrowUpCircle, Plus, Upload, FileSpreadsheet } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import type { FinanceSummaryResponse } from '../../shared/types';
+import type { FinanceSummaryResponse } from '@shared/types';
 
 const REVENUE_COLOR = '#22c55e';
 const EXPENSE_COLOR = '#ef4444';
@@ -21,7 +21,7 @@ function formatCurrency(value: number): string {
 }
 
 export default function FinanceDashboardPage() {
-  const { token } = useAuthStore();
+  const token = useAuthStore(s => s.token);
   const [data, setData] = useState<FinanceSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(6);
