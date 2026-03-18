@@ -8,7 +8,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { setAuth } = useAuthStore();
+  const setAuth = useAuthStore(s => s.setAuth);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -23,13 +23,13 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        setError(data.error || 'Erro ao fazer login.');
+        const body = await res.json().catch(() => null);
+        setError(body?.error || (res.status === 401 ? 'E-mail ou senha incorretos.' : 'Erro ao fazer login.'));
         return;
       }
 
+      const data = await res.json();
       setAuth(data.token, data.doctor);
       navigate('/dashboard');
     } catch {
@@ -42,7 +42,6 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-page-inner">
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
             display: 'inline-flex',
@@ -54,56 +53,61 @@ export default function LoginPage() {
             border: '1px solid rgba(201,164,74,0.3)',
             marginBottom: 16,
           }}>
-            <Activity size={28} color="#c9a44a" />
+            <Activity size={28} color="var(--luz-gold)" aria-hidden />
           </div>
-          <h1 style={{
-            fontFamily: 'Orbitron, sans-serif',
+          <h1 className="font-display" style={{
             fontSize: 20,
-            color: '#c9a44a',
+            color: 'var(--luz-gold)',
             letterSpacing: '0.1em',
           }}>PRONTUÁRIO</h1>
-          <p style={{ fontSize: 13, color: '#a0a0a0', marginTop: 4 }}>
-            LuzPerformance — Acesso Restrito
+          <p style={{ fontSize: 13, color: 'var(--luz-gray-dark)', marginTop: 4 }}>
+            LuzPerformance &mdash; Acesso Restrito
           </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleLogin} className="card animate-fade-in-up">
+        <form onSubmit={handleLogin} className="card animate-fade-in-up" noValidate>
           <div style={{ marginBottom: 20 }}>
-            <label className="form-label">E-mail</label>
+            <label htmlFor="login-email" className="form-label">E-mail</label>
             <input
+              id="login-email"
               type="email"
               className="form-input"
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="dr@luzperformance.com.br"
               required
+              autoComplete="email"
               autoFocus
             />
           </div>
 
           <div style={{ marginBottom: 24 }}>
-            <label className="form-label">Senha</label>
+            <label htmlFor="login-password" className="form-label">Senha</label>
             <input
+              id="login-password"
               type="password"
               className="form-input"
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              autoComplete="current-password"
             />
           </div>
 
           {error && (
-            <div style={{
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 8,
-              padding: '10px 14px',
-              fontSize: 13,
-              color: '#ef4444',
-              marginBottom: 20,
-            }}>
+            <div
+              role="alert"
+              style={{
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                fontSize: 13,
+                color: '#ef4444',
+                marginBottom: 20,
+              }}
+            >
               {error}
             </div>
           )}

@@ -16,7 +16,8 @@ const navItems = [
 ];
 
 export default function AppLayout() {
-  const { doctor, logout } = useAuthStore();
+  const doctor = useAuthStore(s => s.doctor);
+  const logout = useAuthStore(s => s.logout);
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {

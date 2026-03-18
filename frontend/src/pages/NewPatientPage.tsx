@@ -11,7 +11,7 @@ const GENDER_OPTIONS = [
 ];
 
 export default function NewPatientPage() {
-  const { token } = useAuthStore();
+  const token = useAuthStore(s => s.token);
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
