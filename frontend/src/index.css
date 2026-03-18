@@ -1,11 +1,7 @@
 /* ============================================
-   Prontuário LuzPerformance — Design Tokens
-   Mesma paleta de cores do c:/appsite
+   Prontuário LuzPerformance — Design System
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap');
-
-/* === CSS Variables (Design Tokens) === */
 :root {
   --luz-navy:        #0d1f33;
   --luz-navy-light:  #1a3a5c;
@@ -26,7 +22,11 @@
   --sidebar-collapsed-width: 72px;
   --header-height:   64px;
   --border-radius:   12px;
+  --border-radius-sm: 8px;
   --transition:      all 0.2s ease;
+  --focus-ring:      0 0 0 3px rgba(201, 164, 74, 0.25);
+  --shadow-gold:     0 4px 15px rgba(201, 164, 74, 0.3);
+  --shadow-gold-lg:  0 6px 20px rgba(201, 164, 74, 0.4);
 }
 
 /* === Reset === */
@@ -43,6 +43,26 @@ html, body {
 
 #root { height: 100%; }
 
+::selection {
+  background: rgba(201, 164, 74, 0.3);
+  color: var(--luz-white);
+}
+
+/* === Accessibility: Focus === */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* === Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* === Typography === */
 .font-display { font-family: 'Orbitron', sans-serif; }
 
@@ -50,7 +70,7 @@ h1, h2, h3, h4 { color: var(--luz-white); }
 
 /* Gold gradient headings */
 .text-gold-gradient {
-  background: linear-gradient(135deg, #f3d077, #c9a44a, #8a6d29);
+  background: linear-gradient(135deg, var(--luz-gold-light), var(--luz-gold), var(--luz-gold-dark));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -151,15 +171,22 @@ h1, h2, h3, h4 { color: var(--luz-white); }
   text-decoration: none;
 }
 
+.btn:disabled, .btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none !important;
+}
+
 .btn-primary {
   background: var(--luz-gold);
   color: var(--luz-navy);
-  box-shadow: 0 4px 15px rgba(201, 164, 74, 0.3);
+  box-shadow: var(--shadow-gold);
 }
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--luz-gold-light);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(201, 164, 74, 0.4);
+  box-shadow: var(--shadow-gold-lg);
 }
 
 .btn-secondary {
@@ -167,7 +194,7 @@ h1, h2, h3, h4 { color: var(--luz-white); }
   color: var(--luz-gold);
   border: 2px solid var(--luz-gold);
 }
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background: var(--luz-gold);
   color: var(--luz-navy);
 }
@@ -177,14 +204,21 @@ h1, h2, h3, h4 { color: var(--luz-white); }
   color: var(--luz-gray);
   border: 1px solid rgba(255,255,255,0.1);
 }
-.btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--luz-white); }
+.btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: var(--luz-white); }
 
 .btn-danger {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
-.btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+.btn-danger:hover:not(:disabled) { background: rgba(239, 68, 68, 0.25); }
+
+.btn-success {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--luz-success);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.btn-success:hover:not(:disabled) { background: rgba(34, 197, 94, 0.25); }
 
 .btn-sm { padding: 10px 14px; font-size: 12px; min-height: 44px; min-width: 44px; }
 .btn-lg { padding: 14px 28px; font-size: 16px; }
