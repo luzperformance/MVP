@@ -1,21 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Calendar, Clock, MapPin, ExternalLink } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import type { CalendarEventsResponse, CalendarEventItem } from '../../shared/types';
+import type { CalendarEventsResponse, CalendarEventItem } from '@shared/types';
 
 function formatEventDate(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
-  });
-}
-
-function formatEventTime(iso: string, isAllDay: boolean): string {
-  if (isAllDay) return 'Dia inteiro';
-  return new Date(iso).toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 
@@ -28,11 +20,10 @@ function formatEventRange(start: string, end: string, isAllDay: boolean): string
 
 function groupEventsByDate(events: CalendarEventItem[]): { date: string; label: string; items: CalendarEventItem[] }[] {
   const byDate: Record<string, CalendarEventItem[]> = {};
-  events.forEach(ev => {
+  for (const ev of events) {
     const d = ev.start.slice(0, 10);
-    if (!byDate[d]) byDate[d] = [];
-    byDate[d].push(ev);
-  });
+    (byDate[d] ??= []).push(ev);
+  }
   return Object.keys(byDate)
     .sort()
     .map(date => ({
@@ -43,30 +34,43 @@ function groupEventsByDate(events: CalendarEventItem[]): { date: string; label: 
 }
 
 export default function AgendaPage() {
-  const { token } = useAuthStore();
+  const token = useAuthStore(s => s.token);
   const [data, setData] = useState<CalendarEventsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchEvents = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     try {
       const now = new Date();
       const timeMin = now.toISOString();
-      const timeMax = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
+      const timeMax = new Date(now.getTime() + 14 * 86_400_000).toISOString();
       const res = await fetch(
         `/api/calendar/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal }
       );
+      if (!res.ok) {
+        setData({ configured: false, events: [], error: 'Erro ao carregar agenda.' });
+        return;
+      }
       const json = await res.json();
       setData(json);
-    } catch {
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       setData({ configured: false, events: [] });
     } finally {
       setLoading(false);
     }
   }, [token]);
 
-  useEffect(() => { fetchEvents(); }, [fetchEvents]);
+  useEffect(() => {
+    fetchEvents();
+    return () => { abortRef.current?.abort(); };
+  }, [fetchEvents]);
 
   const grouped = data?.events?.length ? groupEventsByDate(data.events) : [];
 
@@ -92,21 +96,22 @@ export default function AgendaPage() {
           </div>
         ) : !data?.configured ? (
           <div className="card animate-fade-in-up agenda-empty-state">
-            <Calendar size={48} color="var(--luz-gold)" className="agenda-empty-icon" aria-hidden />
+            <Calendar size={48} color="var(--luz-gold)" aria-hidden />
             <h3 className="exam-section-title">Agenda não configurada</h3>
-            <p>Configure <code>GOOGLE_CALENDAR_API_KEY</code> e <code>GOOGLE_CALENDAR_ID</code> no servidor para exibir eventos do Google Calendar.</p>
+            <p>Configure <code>GOOGLE_CALENDAR_API_KEY</code> e <code>GOOGLE_CALENDAR_ID</code> no servidor.</p>
           </div>
         ) : data.error ? (
           <div className="card animate-fade-in-up agenda-empty-state">
             <Calendar size={48} color="var(--luz-gold)" aria-hidden />
             <h3 className="exam-section-title">Erro ao carregar</h3>
             <p>{data.error}</p>
+            <button type="button" className="btn btn-ghost" onClick={fetchEvents} style={{ marginTop: 12 }}>Tentar novamente</button>
           </div>
         ) : grouped.length === 0 ? (
           <div className="card animate-fade-in-up agenda-empty-state">
             <Calendar size={48} color="var(--luz-gold)" aria-hidden />
             <h3 className="exam-section-title">Nenhum evento nos próximos 14 dias</h3>
-            <p>Seus compromissos aparecerão aqui quando houver eventos no calendário configurado.</p>
+            <p>Seus compromissos aparecerão aqui quando houver eventos no calendário.</p>
           </div>
         ) : (
           <div className="stagger stagger-sections agenda-content">

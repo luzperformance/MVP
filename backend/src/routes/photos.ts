@@ -63,8 +63,16 @@ photosRouter.delete('/:patientId/photos/:id', (req: AuthRequest, res: Response) 
   const photo = db.prepare('SELECT filename FROM photos WHERE id = ? AND patient_id = ?').get(req.params.id, req.params.patientId) as any;
   if (!photo) return res.status(404).json({ error: 'Foto não encontrada.' });
 
-  // Remove file from filesystem
-  const filePath = path.resolve(process.env.UPLOAD_PATH || './uploads', 'photos', photo.filename);
+  const filename = String(photo.filename ?? '').trim();
+  if (!filename || filename.includes('..') || path.isAbsolute(filename) || filename.includes(path.sep)) {
+    return res.status(400).json({ error: 'Caminho inválido.' });
+  }
+  const baseDir = path.resolve(process.env.UPLOAD_PATH || './uploads', 'photos');
+  const filePath = path.resolve(baseDir, filename);
+  const relativePath = path.relative(baseDir, filePath);
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    return res.status(400).json({ error: 'Caminho inválido.' });
+  }
   try { fs.unlinkSync(filePath); } catch { /* already removed */ }
 
   db.prepare('DELETE FROM photos WHERE id = ?').run(req.params.id);

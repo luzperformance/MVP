@@ -1,5 +1,12 @@
 // Types compartilhados — Prontuário LuzPerformance
 
+export interface Doctor {
+  id: number;
+  name: string;
+  email: string;
+  crm: string;
+}
+
 export interface Patient {
   id: string;
   name: string;
@@ -152,4 +159,75 @@ export interface CalendarEventsResponse {
   message?: string;
   error?: string;
   timeZone?: string;
+}
+
+// CRM — Leads
+export type LeadSource = 'indicacao' | 'instagram' | 'google' | 'site' | 'evento' | 'outro';
+export type LeadStatus = 'novo' | 'contato' | 'qualificado' | 'proposta' | 'convertido' | 'perdido';
+export type LeadTemperature = 'frio' | 'morno' | 'quente';
+
+export interface Lead {
+  id: string;
+  patient_id?: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  source?: LeadSource;
+  status: LeadStatus;
+  temperature?: LeadTemperature;
+  expected_value?: number;
+  tags?: string[];
+  notes?: string;
+  next_followup_at?: string;
+  converted_at?: string;
+  lost_reason?: string;
+  score?: number;
+  score_reasoning?: string;
+  scored_at?: string;
+  last_activity_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LeadActivityType = 'nota' | 'ligacao' | 'email' | 'whatsapp' | 'reuniao' | 'proposta' | 'outro';
+
+export interface LeadActivity {
+  id: string;
+  lead_id: string;
+  type: LeadActivityType;
+  description: string;
+  scheduled_at?: string;
+  completed_at?: string;
+  created_at: string;
+}
+
+// CRM — Assets
+export type AssetType = 'equipamento' | 'protocolo' | 'suplemento' | 'contrato' | 'documento' | 'outro';
+export type AssetStatus = 'ativo' | 'inativo' | 'vendido' | 'expirado';
+
+export interface Asset {
+  id: string;
+  lead_id?: string;
+  patient_id?: string;
+  name: string;
+  type: AssetType;
+  status: AssetStatus;
+  value?: number;
+  acquisition_date?: string;
+  expiration_date?: string;
+  description?: string;
+  metadata?: { [key: string]: unknown };
+  created_at: string;
+  updated_at: string;
+}
+
+// CRM KPIs
+export interface CrmSummary {
+  totalLeads: number;
+  byStatus: { status: LeadStatus; count: number }[];
+  bySource: { source: LeadSource; count: number }[];
+  pipelineValue: number;
+  convertedThisMonth: number;
+  pendingFollowups: number;
 }
