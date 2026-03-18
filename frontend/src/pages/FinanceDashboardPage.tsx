@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -33,26 +33,40 @@ export default function FinanceDashboardPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; totalRows: number; errors?: { row: number; message: string }[]; message: string } | null>(null);
 
-  const fetchSummary = useCallback(async () => {
+  const csvInputRef = useRef<HTMLInputElement | null>(null);
+  const mountedRef = useRef(true);
+
+  const fetchSummary = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const res = await fetch(`/api/finance/summary?period=${period}`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal,
       });
       const json = await res.json();
       if (!res.ok || !json.kpis) {
-        setData(null);
+        if (mountedRef.current) setData(null);
         return;
       }
-      setData(json as FinanceSummaryResponse);
+      if (mountedRef.current) setData(json as FinanceSummaryResponse);
     } catch {
-      setData(null);
+      if (mountedRef.current) setData(null);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [token, period]);
 
-  useEffect(() => { fetchSummary(); }, [fetchSummary]);
+  useEffect(() => {
+    mountedRef.current = true;
+    const controller = new AbortController();
+    // Requisição cancelada quando sair da tela (evita updates em componente desmontado)
+    fetchSummary(controller.signal);
+
+    return () => {
+      mountedRef.current = false;
+      controller.abort();
+    };
+  }, [fetchSummary]);
 
   const handleSubmitEntry = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,8 +74,10 @@ export default function FinanceDashboardPage() {
     setSubmitting(true);
     const amount = parseFloat(form.amount.replace(/,/g, '.'));
     if (!form.category.trim() || Number.isNaN(amount) || amount <= 0) {
-      setSubmitError('Preencha categoria e valor válido.');
-      setSubmitting(false);
+      if (mountedRef.current) {
+        setSubmitError('Preencha categoria e valor válido.');
+        setSubmitting(false);
+      }
       return;
     }
     try {
@@ -77,20 +93,28 @@ export default function FinanceDashboardPage() {
         }),
       });
       const json = await res.json();
-      if (!res.ok) { setSubmitError(json.error || 'Erro ao salvar.'); setSubmitting(false); return; }
-      setForm({
-        ...form,
-        category: '',
-        amount: '',
-        description: '',
-        entry_date: new Date().toISOString().slice(0, 10),
-      });
-      setShowForm(false);
-      fetchSummary();
+      if (!res.ok) {
+        if (mountedRef.current) {
+          setSubmitError(json.error || 'Erro ao salvar.');
+          setSubmitting(false);
+        }
+        return;
+      }
+      if (mountedRef.current) {
+        setForm({
+          ...form,
+          category: '',
+          amount: '',
+          description: '',
+          entry_date: new Date().toISOString().slice(0, 10),
+        });
+        setShowForm(false);
+        fetchSummary();
+      }
     } catch {
-      setSubmitError('Erro de conexão.');
+      if (mountedRef.current) setSubmitError('Erro de conexão.');
     }
-    setSubmitting(false);
+    if (mountedRef.current) setSubmitting(false);
   };
 
   const handleImportCsv = async () => {
@@ -107,25 +131,27 @@ export default function FinanceDashboardPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setImportResult({ imported: 0, totalRows: 0, message: json.error || 'Erro ao importar.' });
-        setImporting(false);
+        if (mountedRef.current) {
+          setImportResult({ imported: 0, totalRows: 0, message: json.error || 'Erro ao importar.' });
+          setImporting(false);
+        }
         return;
       }
-      setImportResult({
-        imported: json.imported ?? 0,
-        totalRows: json.totalRows ?? 0,
-        errors: json.errors,
-        message: json.message || `${json.imported} lançamento(s) importado(s).`,
-      });
-      setImportFile(null);
-      if (document.getElementById('finance-csv-input') instanceof HTMLInputElement) {
-        (document.getElementById('finance-csv-input') as HTMLInputElement).value = '';
+      if (mountedRef.current) {
+        setImportResult({
+          imported: json.imported ?? 0,
+          totalRows: json.totalRows ?? 0,
+          errors: json.errors,
+          message: json.message || `${json.imported} lançamento(s) importado(s).`,
+        });
+        setImportFile(null);
+        if (csvInputRef.current) csvInputRef.current.value = '';
       }
       fetchSummary();
     } catch {
-      setImportResult({ imported: 0, totalRows: 0, message: 'Erro de conexão.' });
+      if (mountedRef.current) setImportResult({ imported: 0, totalRows: 0, message: 'Erro de conexão.' });
     }
-    setImporting(false);
+    if (mountedRef.current) setImporting(false);
   };
 
   const chartData = React.useMemo(() => {
@@ -201,6 +227,7 @@ export default function FinanceDashboardPage() {
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
                 <input
                   id="finance-csv-input"
+                  ref={csvInputRef}
                   type="file"
                   accept=".csv,text/csv"
                   onChange={e => {

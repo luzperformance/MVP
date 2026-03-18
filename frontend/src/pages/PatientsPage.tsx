@@ -1,23 +1,38 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Users, Plus, Search, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import type { Patient } from '../../shared/types';
 
 export default function PatientsPage() {
   const { token } = useAuthStore();
+  const logout = useAuthStore(s => s.logout);
+  const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   const fetchPatients = useCallback(async (q?: string) => {
-    const res = await fetch(`/api/patients${q ? `?q=${encodeURIComponent(q)}` : ''}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    setPatients(data);
-    setLoading(false);
-  }, [token]);
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/patients${q ? `?q=${encodeURIComponent(q)}` : ''}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        logout();
+        navigate('/login');
+        return;
+      }
+
+      const data = await res.json();
+      setPatients(Array.isArray(data) ? data : []);
+    } catch {
+      setPatients([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, logout, navigate]);
 
   useEffect(() => { fetchPatients(); }, [fetchPatients]);
 
@@ -62,9 +77,9 @@ export default function PatientsPage() {
         ) : patients.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: 48 }}>
             <Users size={40} color="#c9a44a" style={{ margin: '0 auto 16px' }} />
-            <p style={{ color: '#a0a0a0' }}>Nenhum paciente cadastrado ainda.</p>
+            <p style={{ color: '#a0a0a0' }}>Não existem pacientes cadastrados, cadastrar o primeiro +</p>
             <Link to="/patients/new" className="btn btn-primary" style={{ marginTop: 16, display: 'inline-flex' }}>
-              <Plus size={16} /> Cadastrar primeiro paciente
+              <Plus size={16} /> Cadastrar o primeiro +
             </Link>
           </div>
         ) : (
