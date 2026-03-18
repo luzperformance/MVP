@@ -50,6 +50,18 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response) => {
   });
 });
 
+// PATCH /api/auth/profile — atualizar nome e CRM do médico
+authRouter.patch('/profile', async (req: Request, res: Response) => {
+  const { name, crm } = req.body;
+  if (!name || !crm) {
+    return res.status(400).json({ error: 'Nome e CRM são obrigatórios.' });
+  }
+  const db = getDb();
+  db.prepare('UPDATE doctor SET name = ?, crm = ? WHERE id = 1').run(name, crm);
+  const doctor = db.prepare('SELECT id, name, email, crm FROM doctor WHERE id = 1').get() as any;
+  return res.json({ doctor });
+});
+
 // POST /api/auth/logout
 authRouter.post('/logout', (req: Request, res: Response) => {
   const db = getDb();
