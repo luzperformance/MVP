@@ -285,3 +285,42 @@ export interface GestaoSummary {
   byPackage: { type: string; count: number }[];
   byState: { state: string; count: number }[];
 }
+
+// Alerts
+export type AlertType =
+  | 'patient_inactive'
+  | 'contract_expiring'
+  | 'exam_overdue'
+  | 'lead_hot_no_followup'
+  | 'payment_overdue'
+  | 'consultation_today';
+
+export type AlertSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export interface Alert {
+  id: string;
+  type: AlertType;
+  severity: AlertSeverity;
+  title: string;
+  description: string;
+  entity_type: 'patient' | 'lead';
+  entity_id: string;
+  entity_name: string;
+  action_url: string;
+  created_at: string;
+  data?: { [key: string]: unknown };
+}
+
+export interface AlertsSummary {
+  total: number;
+  critical: number;
+  high: number;
+  by_type: {
+    patient_inactive: number;
+    contract_expiring: number;
+    exam_overdue: number;
+    lead_hot_no_followup: number;
+    payment_overdue: number;
+    consultation_today: number;
+  };
+}

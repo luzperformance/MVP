@@ -17,6 +17,8 @@ import { consultasRouter } from './routes/consultas';
 import { leadsRouter } from './routes/leads';
 import { assetsRouter } from './routes/assets';
 import { gestaoRouter } from './routes/gestao';
+import { alertsRouter } from './routes/alerts';
+import { publicLeadsRouter } from './routes/publicLeads';
 import { lgpdMiddleware } from './middleware/lgpd';
 import { logger } from './services/logger';
 
@@ -26,9 +28,17 @@ const PORT = process.env.PORT || 3001;
 // === SECURITY ===
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? 'https://prontuario.luzperformance.com.br'
-    : 'http://localhost:5173',
+  origin: (origin, callback) => {
+    const allowed = [
+      'http://localhost:5173',
+      'https://prontuario.luzperformance.com.br',
+      'https://www.luzperformance.com',
+      'https://luzperformance.com',
+    ];
+    if (!origin) return callback(null, true);
+    if (allowed.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'), false);
+  },
   credentials: true,
 }));
 app.use(rateLimit({
@@ -61,6 +71,8 @@ app.use('/api/consultas', consultasRouter);
 app.use('/api/leads', leadsRouter);
 app.use('/api/assets', assetsRouter);
 app.use('/api/gestao', gestaoRouter);
+app.use('/api/alerts', alertsRouter);
+app.use('/api/public', publicLeadsRouter);
 
 // === HEALTH CHECK ===
 app.get('/api/health', (_req, res) => {
