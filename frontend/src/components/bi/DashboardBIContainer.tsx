@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Responsive as ResponsiveGridLayoutOriginal } from 'react-grid-layout';
-// @ts-ignore
-import WidthProvider from 'react-grid-layout/build/components/WidthProvider';
+import { Responsive as ResponsiveGridLayoutOriginal, WidthProvider } from 'react-grid-layout';
 const ResponsiveGridLayout = WidthProvider(ResponsiveGridLayoutOriginal);
 import { Plus } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
