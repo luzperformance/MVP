@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, MapPin, ExternalLink, LayoutGrid, List, Plus, Settings } from 'lucide-react';
+import { Calendar, Clock, MapPin, ExternalLink, LayoutGrid, Plus, Settings } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import type { CalendarEventsResponse, CalendarEventItem } from '@shared/types';
 
@@ -91,45 +91,7 @@ export default function AgendaPage() {
           </div>
         </div>
 
-        {/* View toggle */}
-        <div style={{
-          display: 'flex',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(201,164,74,0.15)',
-          borderRadius: 10,
-          padding: 3,
-          gap: 2,
-        }}>
-          {([
-            { id: 'calendario', icon: LayoutGrid, label: 'Calendário' },
-            { id: 'lista',      icon: List,        label: 'Lista'      },
-          ] as const).map(({ id, icon: Icon, label }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setView(id)}
-              aria-label={label}
-              title={label}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 14px',
-                borderRadius: 8,
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: 13,
-                fontWeight: 600,
-                fontFamily: 'Montserrat, sans-serif',
-                transition: 'all 0.2s ease',
-                background: view === id ? 'rgba(201,164,74,0.18)' : 'transparent',
-                color:      view === id ? 'var(--luz-gold)'        : 'var(--luz-gray-dark)',
-                boxShadow:  view === id ? '0 0 0 1px rgba(201,164,74,0.3)' : 'none',
-              }}
-            >
-              <Icon size={15} aria-hidden />
-              <span className="agenda-tab-label">{label}</span>
-            </button>
-          ))}
-        </div>
+        
       </div>
 
       <div className="page-content" style={{ paddingTop: 20 }}>
