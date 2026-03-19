@@ -6,4 +6,7 @@ uploads/
 logs/
 .env
 .env.local
+backend/.env
+backend/.env.local
+backend/.env.*
 *.js.map
