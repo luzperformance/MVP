@@ -1,10 +1,26 @@
-import React, { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Wand2, Save, Loader } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, Wand2, Save, Loader, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import type { SOAPNote } from '@shared/types';
 
 type Source = 'manual' | 'transcricao' | 'resumo';
+
+// Renderiza markdown básico (**bold** e quebras de linha)
+function renderSimpleMarkdown(text: string) {
+  return text.split('\n').map((line, i) => {
+    const parts = line.split(/(\*\*[^*]+\*\*)/g);
+    return (
+      <p key={i} style={{ margin: i > 0 ? '8px 0 0' : 0, lineHeight: 1.6 }}>
+        {parts.map((part, j) =>
+          part.startsWith('**') && part.endsWith('**')
+            ? <strong key={j}>{part.slice(2, -2)}</strong>
+            : part
+        )}
+      </p>
+    );
+  });
+}
 
 const SOAP_LABELS: Record<keyof SOAPNote, string> = {
   soap_subjective: 'S — Subjetivo (queixa e história)',
@@ -36,6 +52,34 @@ export default function NewRecordPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [aiError, setAiError] = useState('');
+  const [preConsultSummary, setPreConsultSummary] = useState<string | null>(null);
+  const [preConsultLoading, setPreConsultLoading] = useState(true);
+  const [preConsultError, setPreConsultError] = useState('');
+  const [preConsultExpanded, setPreConsultExpanded] = useState(true);
+
+  useEffect(() => {
+    if (!patientId || !token) return;
+    let cancelled = false;
+    setPreConsultLoading(true);
+    setPreConsultError('');
+    fetch(`/api/patients/${patientId}/pre-consult-summary`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(res.status === 404 ? 'Paciente não encontrado' : 'Erro ao carregar resumo');
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) setPreConsultSummary(data.summary || '');
+      })
+      .catch((err) => {
+        if (!cancelled) setPreConsultError(err.message || 'Erro ao gerar resumo pré-consulta');
+      })
+      .finally(() => {
+        if (!cancelled) setPreConsultLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [patientId, token]);
 
   const processWithAI = async () => {
     if (!rawInput.trim()) return;
@@ -105,6 +149,48 @@ export default function NewRecordPage() {
       </div>
 
       <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* Resumo Pré-Consulta com IA */}
+        <div className="card animate-fade-in-up glass-card" style={{ overflow: 'hidden' }}>
+          <button
+            type="button"
+            onClick={() => setPreConsultExpanded((e) => !e)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              width: '100%',
+              padding: 16,
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--luz-white)',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <FileText size={18} color="var(--luz-gold)" />
+            <span className="font-display" style={{ fontSize: 14, textTransform: 'uppercase', color: 'var(--luz-gold)' }}>
+              Resumo Pré-Consulta
+            </span>
+            {preConsultExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+          {preConsultExpanded && (
+            <div style={{ padding: '0 16px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              {preConsultLoading && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--luz-gray)', fontSize: 13 }}>
+                  <Loader size={14} style={{ animation: 'finance-spin 1s linear infinite' }} />
+                  Gerando resumo com IA...
+                </div>
+              )}
+              {preConsultError && !preConsultLoading && (
+                <div style={{ color: 'var(--luz-gray-dark)', fontSize: 13 }}>{preConsultError}</div>
+              )}
+              {preConsultSummary && !preConsultLoading && (
+                <div style={{ color: 'var(--luz-gray)', fontSize: 14 }}>{renderSimpleMarkdown(preConsultSummary)}</div>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="card animate-fade-in-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
           <div>
             <label htmlFor="record-date" className="form-label">Data da Consulta</label>
