@@ -1,19 +1,19 @@
 import { Router, Response } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
-import { pool } from '../db/database';
+import { getDb } from '../db/database';
+import { saveSqlite } from '../db/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const ok = /\.csv$/i.test(file.originalname) || (file.mimetype === 'text/csv');
     cb(null, !!ok);
   },
 });
 
-/** Parse one CSV line handling quoted fields */
 function parseCsvLine(line: string): string[] {
   const out: string[] = [];
   let i = 0;
@@ -22,7 +22,7 @@ function parseCsvLine(line: string): string[] {
       let end = i + 1;
       while (end < line.length) {
         if (line[end] === '"' && (line[end + 1] === ',' || line[end + 1] === undefined || line[end + 1] === '\r')) break;
-        if (line[end] === '"' && line[end + 1] === '"') end += 2; // escaped quote
+        if (line[end] === '"' && line[end + 1] === '"') end += 2;
         else end += 1;
       }
       out.push(line.slice(i + 1, end).replace(/""/g, '"').trim());
@@ -37,7 +37,6 @@ function parseCsvLine(line: string): string[] {
   return out;
 }
 
-/** Normalize header to internal key */
 const HEADER_MAP: Record<string, string> = {
   tipo: 'type', type: 'type',
   categoria: 'category', category: 'category',
@@ -65,16 +64,11 @@ function normalizeType(v: string): 'revenue' | 'expense' | null {
 function normalizeDate(v: string): string | null {
   const s = (v || '').trim();
   if (!s) return null;
-  // YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // DD/MM/YYYY
   const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/) || s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   if (m) {
     const [a, b, c] = m[1].length === 4 ? [m[3], m[2], m[1]] : [m[1], m[2], m[3]];
-    const d = a.padStart(2, '0');
-    const mo = b.padStart(2, '0');
-    const y = c.padStart(4, '0');
-    return `${y}-${mo}-${d}`;
+    return `${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`;
   }
   return null;
 }
@@ -88,11 +82,12 @@ function parseAmount(v: string): number | null {
 export const financeRouter = Router();
 financeRouter.use(authMiddleware);
 
-/** GET /api/finance/summary — KPIs e dados para o dashboard (receita, despesa, resultado por mês) */
-financeRouter.get('/summary', async (req: AuthRequest, res: Response) => {
+/** GET /api/finance/summary */
+financeRouter.get('/summary', (req: AuthRequest, res: Response) => {
   try {
+    const db = getDb();
     const { period = '6', from, to } = req.query;
-    
+
     let startDate: string;
     let endDate: string = new Date().toISOString().slice(0, 10);
 
@@ -106,54 +101,41 @@ financeRouter.get('/summary', async (req: AuthRequest, res: Response) => {
       startDate = cutoff.toISOString().slice(0, 10);
     }
 
-    // SQL Otimizado para PostgreSQL (to_char em vez de strftime)
-    const revenuePromise = pool.query(`
-      SELECT to_char(entry_date, 'YYYY-MM') as month, SUM(amount) as total
-      FROM finance_entries WHERE type = 'revenue' AND entry_date BETWEEN $1 AND $2
+    const revenueRows = db.prepare(`
+      SELECT strftime('%Y-%m', entry_date) as month, SUM(amount) as total
+      FROM finance_entries WHERE type = 'revenue' AND entry_date BETWEEN ? AND ?
       GROUP BY 1 ORDER BY 1
-    `, [startDate, endDate]);
+    `).all(startDate, endDate) as any[];
 
-    const expensePromise = pool.query(`
-      SELECT to_char(entry_date, 'YYYY-MM') as month, SUM(amount) as total
-      FROM finance_entries WHERE type = 'expense' AND entry_date BETWEEN $1 AND $2
+    const expenseRows = db.prepare(`
+      SELECT strftime('%Y-%m', entry_date) as month, SUM(amount) as total
+      FROM finance_entries WHERE type = 'expense' AND entry_date BETWEEN ? AND ?
       GROUP BY 1 ORDER BY 1
-    `, [startDate, endDate]);
+    `).all(startDate, endDate) as any[];
 
-    // Agregação por categoria (Despesas)
-    const categoryPromise = pool.query(`
+    const categoryRows = db.prepare(`
       SELECT category, SUM(amount) as total
-      FROM finance_entries WHERE type = 'expense' AND entry_date BETWEEN $1 AND $2
+      FROM finance_entries WHERE type = 'expense' AND entry_date BETWEEN ? AND ?
       GROUP BY 1 ORDER BY 2 DESC
-    `, [startDate, endDate]);
-
-    const [revenueRes, expenseRes, categoryRes] = await Promise.all([revenuePromise, expensePromise, categoryPromise]);
-    
-    const revenueRows = revenueRes.rows as { month: string; total: string }[];
-    const expenseRows = expenseRes.rows as { month: string; total: string }[];
-    const categoryRows = categoryRes.rows as { category: string; total: string }[];
+    `).all(startDate, endDate) as any[];
 
     const byMonth: Record<string, { month: string; revenue: number; expense: number; result: number }> = {};
-    revenueRows.forEach((r: { month: string; total: string }) => {
-      const total = parseFloat(r.total || '0');
+    revenueRows.forEach((r: any) => {
       if (!byMonth[r.month]) byMonth[r.month] = { month: r.month, revenue: 0, expense: 0, result: 0 };
-      byMonth[r.month].revenue = total;
+      byMonth[r.month].revenue = r.total || 0;
     });
-    expenseRows.forEach((r: { month: string; total: string }) => {
-      const total = parseFloat(r.total || '0');
+    expenseRows.forEach((r: any) => {
       if (!byMonth[r.month]) byMonth[r.month] = { month: r.month, revenue: 0, expense: 0, result: 0 };
-      byMonth[r.month].expense = total;
+      byMonth[r.month].expense = r.total || 0;
     });
     Object.keys(byMonth).forEach(m => {
       byMonth[m].result = byMonth[m].revenue - byMonth[m].expense;
     });
 
     const monthly = Object.values(byMonth).sort((a, b) => a.month.localeCompare(b.month));
-
     const totalRevenue = monthly.reduce((s, r) => s + r.revenue, 0);
     const totalExpense = monthly.reduce((s, r) => s + r.expense, 0);
     const resultTotal = totalRevenue - totalExpense;
-
-    // Projeção Anual: Média mensal * 12
     const avgProfit = monthly.length > 0 ? resultTotal / monthly.length : 0;
     const projectedAnnualProfit = avgProfit * 12;
 
@@ -172,13 +154,10 @@ financeRouter.get('/summary', async (req: AuthRequest, res: Response) => {
       },
       categories: categoryRows.map(c => ({
         name: c.category,
-        value: parseFloat(c.total || '0')
+        value: c.total || 0
       })),
       monthly,
-      periodInfo: {
-        start: startDate,
-        end: endDate
-      },
+      periodInfo: { start: startDate, end: endDate },
     });
   } catch (err) {
     console.error('Finance summary error:', err);
@@ -186,69 +165,75 @@ financeRouter.get('/summary', async (req: AuthRequest, res: Response) => {
   }
 });
 
-/** GET /api/finance/entries — Lista lançamentos com filtro opcional */
-financeRouter.get('/entries', async (req: AuthRequest, res: Response) => {
+/** GET /api/finance/entries */
+financeRouter.get('/entries', (req: AuthRequest, res: Response) => {
   try {
+    const db = getDb();
     const { type, from, to } = req.query;
     let sql = 'SELECT * FROM finance_entries WHERE 1=1';
-    const params: (string | number)[] = [];
-    
+    const params: string[] = [];
+
     if (type === 'revenue' || type === 'expense') {
+      sql += ` AND type = ?`;
       params.push(type);
-      sql += ` AND type = $${params.length}`;
     }
     if (from && typeof from === 'string') {
+      sql += ` AND entry_date >= ?`;
       params.push(from);
-      sql += ` AND entry_date >= $${params.length}`;
     }
     if (to && typeof to === 'string') {
+      sql += ` AND entry_date <= ?`;
       params.push(to);
-      sql += ` AND entry_date <= $${params.length}`;
     }
     sql += ' ORDER BY entry_date DESC, created_at DESC LIMIT 100';
-    
-    const { rows } = await pool.query(sql, params);
+
+    const rows = db.prepare(sql).all(...params);
     return res.json(rows);
   } catch (err) {
     return res.status(500).json({ error: 'Erro ao listar lançamentos.' });
   }
 });
 
-/** POST /api/finance/entries — Cria lançamento */
-financeRouter.post('/entries', async (req: AuthRequest, res: Response) => {
+/** POST /api/finance/entries */
+financeRouter.post('/entries', (req: AuthRequest, res: Response) => {
   try {
+    const db = getDb();
     const { type, category, amount, entry_date, description } = req.body;
     if (!type || !category || amount == null || !entry_date) {
       return res.status(400).json({ error: 'Campos obrigatórios: type, category, amount, entry_date.' });
     }
-    const value = parseFloat(amount);
-    
-    const { rows } = await pool.query(`
-      INSERT INTO finance_entries (type, category, amount, entry_date, description)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `, [type, category, Math.abs(value), entry_date, description || null]);
+    const value = Math.abs(parseFloat(amount));
 
-    return res.status(201).json(rows[0]);
+    db.prepare(`
+      INSERT INTO finance_entries (type, category, amount, entry_date, description)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(type, category, value, entry_date, description || null);
+
+    saveSqlite();
+    const row = db.prepare('SELECT * FROM finance_entries ORDER BY rowid DESC LIMIT 1').get();
+    return res.status(201).json(row);
   } catch (err) {
     return res.status(500).json({ error: 'Erro ao criar lançamento.' });
   }
 });
 
 /** DELETE /api/finance/entries/:id */
-financeRouter.delete('/entries/:id', async (req: AuthRequest, res: Response) => {
+financeRouter.delete('/entries/:id', (req: AuthRequest, res: Response) => {
   try {
-    const { rowCount } = await pool.query('DELETE FROM finance_entries WHERE id = $1', [req.params.id]);
-    if (rowCount === 0) return res.status(404).json({ error: 'Lançamento não encontrado.' });
+    const db = getDb();
+    const r = db.prepare('DELETE FROM finance_entries WHERE id = ?').run(req.params.id);
+    if (r.changes === 0) return res.status(404).json({ error: 'Lançamento não encontrado.' });
+    saveSqlite();
     return res.json({ message: 'Lançamento removido.' });
   } catch (err) {
     return res.status(500).json({ error: 'Erro ao remover lançamento.' });
   }
 });
 
-/** POST /api/finance/import — Importa lançamentos a partir de CSV */
-financeRouter.post('/import', upload.single('file'), async (req: AuthRequest, res: Response) => {
+/** POST /api/finance/import */
+financeRouter.post('/import', upload.single('file'), (req: AuthRequest, res: Response) => {
   try {
+    const db = getDb();
     const file = req.file as Express.Multer.File | undefined;
     if (!file || !file.buffer || file.buffer.length === 0) {
       return res.status(400).json({ error: 'Arquivo CSV vázio ou ausente.' });
@@ -268,30 +253,32 @@ financeRouter.post('/import', upload.single('file'), async (req: AuthRequest, re
     let imported = 0;
     const errors: any[] = [];
 
+    const insertStmt = db.prepare(
+      `INSERT INTO finance_entries (type, category, amount, entry_date, description) VALUES (?, ?, ?, ?, ?)`
+    );
+
     for (let i = 0; i < csvRows.length; i++) {
-        const row = csvRows[i];
-        const type = normalizeType(row[typeCol]);
-        const cat = (row[categoryCol] || '').trim();
-        const amt = parseAmount(row[amountCol]);
-        const dat = normalizeDate(row[dateCol]);
-        const ds = descCol >= 0 && descCol < row.length ? (row[descCol] || '').trim() || null : null;
+      const row = csvRows[i];
+      const type = normalizeType(row[typeCol]);
+      const cat = (row[categoryCol] || '').trim();
+      const amt = parseAmount(row[amountCol]);
+      const dat = normalizeDate(row[dateCol]);
+      const ds = descCol >= 0 && descCol < row.length ? (row[descCol] || '').trim() || null : null;
 
-        if (!type || !cat || amt == null || !dat) {
-            errors.push({ row: i + 2, message: 'Dados inválidos.' });
-            continue;
-        }
+      if (!type || !cat || amt == null || !dat) {
+        errors.push({ row: i + 2, message: 'Dados inválidos.' });
+        continue;
+      }
 
-        try {
-            await pool.query(
-                `INSERT INTO finance_entries (type, category, amount, entry_date, description) VALUES ($1, $2, $3, $4, $5)`,
-                [type, cat, amt, dat, ds]
-            );
-            imported++;
-        } catch (e) {
-            errors.push({ row: i + 2, message: 'Erro no banco.' });
-        }
+      try {
+        insertStmt.run(type, cat, amt, dat, ds);
+        imported++;
+      } catch (e) {
+        errors.push({ row: i + 2, message: 'Erro no banco.' });
+      }
     }
 
+    saveSqlite();
     return res.json({ imported, total: csvRows.length, errors: errors.length ? errors : undefined });
   } catch (err) {
     return res.status(500).json({ error: 'Erro na importação.' });
