@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, UserCircle, MapPin, HeartPulse, Zap, Info, ClipboardList } from 'lucide-react';
 import axios from 'axios';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../../stores/authStore';
 
 interface NewPatientModalProps {
   onClose: () => void;

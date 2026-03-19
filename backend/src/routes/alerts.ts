@@ -2,6 +2,33 @@ import { Router, Response } from 'express';
 import { getDb } from '../db/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
+// sql.js exec() wrapper — returns array of plain objects (compatible with sql.js AND pg)
+function dbAll(db: any, sql: string, params: any[] = []): any[] {
+  // PG pool path: use .query() if available
+  if (typeof db.query === 'function' && typeof db.prepare !== 'function') {
+    // Should not happen synchronously — alerts is SQLite-only for now
+    return [];
+  }
+  try {
+    // sql.js: exec() returns [{columns, values}]
+    const results: { columns: string[]; values: any[][] }[] = db.exec(sql, params);
+    if (!results.length) return [];
+    const { columns, values } = results[0];
+    return values.map(row => {
+      const obj: Record<string, unknown> = {};
+      columns.forEach((col, i) => { obj[col] = row[i]; });
+      return obj;
+    });
+  } catch {
+    return [];
+  }
+}
+
+function dbGet(db: any, sql: string, params: any[] = []): any {
+  const rows = dbAll(db, sql, params);
+  return rows[0] ?? null;
+}
+
 export const alertsRouter = Router();
 alertsRouter.use(authMiddleware);
 
@@ -27,7 +54,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
   const today = now.toISOString().slice(0, 10);
 
   // 1. Pacientes inativos (sem consulta há mais de 45 dias sendo ativos)
-  const inactivePatients = db.prepare(`
+  const inactivePatients = dbAll(db, `
     SELECT id, name, last_consultation, package_type
     FROM patients
     WHERE deleted_at IS NULL
@@ -36,7 +63,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
       AND date(last_consultation) < date('now', '-45 days')
     ORDER BY last_consultation ASC
     LIMIT 20
-  `).all() as any[];
+  `);
 
   for (const p of inactivePatients) {
     const days = Math.floor((now.getTime() - new Date(p.last_consultation).getTime()) / 86400000);
@@ -56,7 +83,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
   }
 
   // 2. Contratos vencendo em 15 dias
-  const expiringContracts = db.prepare(`
+  const expiringContracts = dbAll(db, `
     SELECT id, name, contract_end, package_type, monthly_value
     FROM patients
     WHERE deleted_at IS NULL
@@ -65,7 +92,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
       AND date(contract_end) BETWEEN date('now') AND date('now', '+15 days')
     ORDER BY contract_end ASC
     LIMIT 20
-  `).all() as any[];
+  `);
 
   for (const p of expiringContracts) {
     const daysLeft = Math.ceil((new Date(p.contract_end).getTime() - now.getTime()) / 86400000);
@@ -85,7 +112,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
   }
 
   // 3. Exames vencidos (último exame há mais de 90 dias para pacientes ativos)
-  const overdueExams = db.prepare(`
+  const overdueExams = dbAll(db, `
     SELECT id, name, last_exam
     FROM patients
     WHERE deleted_at IS NULL
@@ -94,7 +121,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
       AND date(last_exam) < date('now', '-90 days')
     ORDER BY last_exam ASC
     LIMIT 20
-  `).all() as any[];
+  `);
 
   for (const p of overdueExams) {
     const days = Math.floor((now.getTime() - new Date(p.last_exam).getTime()) / 86400000);
@@ -114,7 +141,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
   }
 
   // 4. Leads quentes sem follow-up (temperatura quente/morno, sem atividade há 3+ dias)
-  const hotLeadsNoFollowup = db.prepare(`
+  const hotLeadsNoFollowup = dbAll(db, `
     SELECT id, name, temperature, status, last_activity_at, expected_value
     FROM leads
     WHERE deleted_at IS NULL
@@ -128,7 +155,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
       CASE temperature WHEN 'quente' THEN 1 WHEN 'morno' THEN 2 ELSE 3 END,
       last_activity_at ASC
     LIMIT 15
-  `).all() as any[];
+  `);
 
   for (const l of hotLeadsNoFollowup) {
     const days = l.last_activity_at
@@ -150,7 +177,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
   }
 
   // 5. Pagamentos atrasados (data de pagamento passou e paciente ativo)
-  const overduePayments = db.prepare(`
+  const overduePayments = dbAll(db, `
     SELECT id, name, payment_date, monthly_value, package_type
     FROM patients
     WHERE deleted_at IS NULL
@@ -160,7 +187,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
       AND monthly_value > 0
     ORDER BY payment_date ASC
     LIMIT 15
-  `).all() as any[];
+  `);
 
   for (const p of overduePayments) {
     const days = Math.floor((now.getTime() - new Date(p.payment_date).getTime()) / 86400000);
@@ -180,14 +207,14 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
   }
 
   // 6. Consultas hoje
-  const consultationsToday = db.prepare(`
+  const consultationsToday = dbAll(db, `
     SELECT id, name, next_consultation
     FROM patients
     WHERE deleted_at IS NULL
       AND next_consultation = ?
     ORDER BY name ASC
     LIMIT 10
-  `).all(today) as any[];
+  `, [today]);
 
   for (const p of consultationsToday) {
     alerts.push({
@@ -216,40 +243,40 @@ alertsRouter.get('/summary', (_req: AuthRequest, res: Response) => {
   const db = getDb();
   const today = new Date().toISOString().slice(0, 10);
 
-  const inactive = (db.prepare(`
+  const inactive = (dbGet(db, `
     SELECT COUNT(*) as c FROM patients
     WHERE deleted_at IS NULL AND (mgmt_status = 'ativo' OR mgmt_status IS NULL)
       AND last_consultation IS NOT NULL AND date(last_consultation) < date('now', '-45 days')
-  `).get() as any).c;
+  `) ?? { c: 0 }).c;
 
-  const contractsExpiring = (db.prepare(`
+  const contractsExpiring = (dbGet(db, `
     SELECT COUNT(*) as c FROM patients
     WHERE deleted_at IS NULL AND contract_done = 1 AND contract_end IS NOT NULL
       AND date(contract_end) BETWEEN date('now') AND date('now', '+15 days')
-  `).get() as any).c;
+  `) ?? { c: 0 }).c;
 
-  const examsOverdue = (db.prepare(`
+  const examsOverdue = (dbGet(db, `
     SELECT COUNT(*) as c FROM patients
     WHERE deleted_at IS NULL AND (mgmt_status = 'ativo' OR mgmt_status IS NULL)
       AND last_exam IS NOT NULL AND date(last_exam) < date('now', '-90 days')
-  `).get() as any).c;
+  `) ?? { c: 0 }).c;
 
-  const hotLeads = (db.prepare(`
+  const hotLeads = (dbGet(db, `
     SELECT COUNT(*) as c FROM leads
     WHERE deleted_at IS NULL AND status NOT IN ('convertido', 'perdido')
       AND temperature IN ('quente', 'morno')
       AND (last_activity_at IS NULL OR date(last_activity_at) < date('now', '-3 days'))
-  `).get() as any).c;
+  `) ?? { c: 0 }).c;
 
-  const paymentsOverdue = (db.prepare(`
+  const paymentsOverdue = (dbGet(db, `
     SELECT COUNT(*) as c FROM patients
     WHERE deleted_at IS NULL AND (mgmt_status = 'ativo' OR mgmt_status IS NULL)
       AND payment_date IS NOT NULL AND date(payment_date) < date('now') AND monthly_value > 0
-  `).get() as any).c;
+  `) ?? { c: 0 }).c;
 
-  const consultationsToday = (db.prepare(`
+  const consultationsToday = (dbGet(db, `
     SELECT COUNT(*) as c FROM patients WHERE deleted_at IS NULL AND next_consultation = ?
-  `).get(today) as any).c;
+  `, [today]) ?? { c: 0 }).c;
 
   const total = inactive + contractsExpiring + examsOverdue + hotLeads + paymentsOverdue;
   const critical = contractsExpiring;
