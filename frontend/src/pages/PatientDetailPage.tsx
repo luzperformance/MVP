@@ -1,10 +1,92 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, FileText, User, Calendar, History, Phone, Mail, FlaskConical, Camera } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, User, Calendar, History, Phone, Mail, FlaskConical, Camera, Brain, Loader, RefreshCw, AlertTriangle, ChevronUp, ChevronDown, Activity, Pill, ClipboardList, Stethoscope } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 import type { Patient, Record } from '@shared/types';
 import DashboardBIContainer from '../components/bi/DashboardBIContainer';
+
+function renderMarkdownSections(text: string) {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  let currentSection: string | null = null;
+  let sectionLines: string[] = [];
+  let key = 0;
+
+  const sectionIcons: Record<string, React.ReactNode> = {
+    'exame': <Activity size={14} />,
+    'prescri': <Pill size={14} />,
+    'observ': <ClipboardList size={14} />,
+    'tempo': <Stethoscope size={14} />,
+  };
+
+  const flushSection = () => {
+    if (sectionLines.length === 0) return;
+    const content = sectionLines.join('\n').trim();
+    if (!content) return;
+
+    let icon: React.ReactNode = <FileText size={14} />;
+    if (currentSection) {
+      const lower = currentSection.toLowerCase();
+      for (const [kw, ic] of Object.entries(sectionIcons)) {
+        if (lower.includes(kw)) { icon = ic; break; }
+      }
+    }
+
+    elements.push(
+      <div key={key++} style={{ marginBottom: 14 }}>
+        {currentSection && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6,
+            color: 'var(--luz-gold)', fontSize: 11, fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '0.05em',
+          }}>
+            {icon}
+            {currentSection.replace(/^#+\s*/, '').replace(/\*\*/g, '')}
+          </div>
+        )}
+        <div style={{ color: 'var(--luz-gray)', fontSize: 13, lineHeight: 1.6 }}>
+          {content.split('\n').map((line, i) => {
+            const parts = line.split(/(\*\*[^*]+\*\*)/g);
+            const isBullet = line.trimStart().startsWith('-') || line.trimStart().startsWith('•');
+            return (
+              <div key={i} style={{
+                margin: isBullet ? '2px 0' : '4px 0',
+                paddingLeft: isBullet ? 10 : 0,
+                position: 'relative',
+              }}>
+                {isBullet && (
+                  <span style={{
+                    position: 'absolute', left: 0, top: 7,
+                    width: 3, height: 3, borderRadius: '50%',
+                    background: 'var(--luz-gold)', opacity: 0.5,
+                  }} />
+                )}
+                {parts.map((part, j) =>
+                  part.startsWith('**') && part.endsWith('**')
+                    ? <strong key={j} style={{ color: 'var(--luz-white)', fontWeight: 600 }}>{part.slice(2, -2)}</strong>
+                    : <span key={j}>{isBullet && j === 0 ? part.replace(/^\s*[-•]\s*/, '') : part}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+    sectionLines = [];
+  };
+
+  for (const line of lines) {
+    if (/^#{1,3}\s/.test(line) || /^\*\*\d+\./.test(line)) {
+      flushSection();
+      currentSection = line;
+    } else {
+      sectionLines.push(line);
+    }
+  }
+  flushSection();
+  return elements;
+}
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +96,10 @@ export default function PatientDetailPage() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [records, setRecords] = useState<Record[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [aiExpanded, setAiExpanded] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -40,6 +126,23 @@ export default function PatientDetailPage() {
     </div>
   );
 
+  const loadAiSummary = () => {
+    if (!id || !token) return;
+    setAiLoading(true);
+    setAiError('');
+    setAiExpanded(true);
+    fetch(`/api/patients/${id}/pre-consult-summary`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Erro ao gerar resumo');
+        return res.json();
+      })
+      .then((data) => setAiSummary(data.summary || ''))
+      .catch((err) => setAiError(err.message))
+      .finally(() => setAiLoading(false));
+  };
+
   if (!patient) return <div className="page-content">Paciente não encontrado.</div>;
 
   return (
@@ -55,6 +158,20 @@ export default function PatientDetailPage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={loadAiSummary}
+            disabled={aiLoading}
+            style={{ gap: 6, color: 'var(--luz-gold)', border: '1px solid rgba(201,164,74,0.3)' }}
+            title="Gerar resumo pré-consulta com IA"
+          >
+            {aiLoading
+              ? <Loader size={14} style={{ animation: 'finance-spin 1s linear infinite' }} />
+              : <Brain size={14} />
+            }
+            Resumo IA
+          </button>
           <Link to={`/patients/${id}/records/new`} className="btn btn-primary btn-sm">
             <Plus size={16} /> Novo Registro
           </Link>
@@ -135,8 +252,72 @@ export default function PatientDetailPage() {
           </section>
         </div>
 
-        {/* Sidebar: Summary/Stats */}
+        {/* Sidebar: AI Summary + Stats */}
         <aside className="stagger-sections">
+          {/* AI Pre-Consult Summary */}
+          {(aiSummary || aiLoading || aiError) && (
+            <div className="card glass-card animate-fade-in-up" style={{ marginBottom: 16, overflow: 'hidden', padding: 0 }}>
+              <button
+                type="button"
+                onClick={() => setAiExpanded((e) => !e)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', padding: '14px 16px',
+                  background: aiExpanded
+                    ? 'linear-gradient(135deg, rgba(201,164,74,0.1) 0%, transparent 100%)'
+                    : 'transparent',
+                  border: 'none', color: 'var(--luz-white)',
+                  cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <Brain size={14} color="var(--luz-gold)" />
+                <span className="font-display" style={{
+                  fontSize: 11, textTransform: 'uppercase', flex: 1,
+                  color: 'var(--luz-gold)', letterSpacing: '0.05em',
+                }}>
+                  Resumo IA
+                </span>
+                {aiExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+              {aiExpanded && (
+                <div style={{
+                  padding: '0 16px 16px',
+                  borderTop: '1px solid rgba(201,164,74,0.1)',
+                  maxHeight: 400, overflowY: 'auto',
+                }}>
+                  {aiLoading && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 0' }}>
+                      {[1,2,3,4].map(i => (
+                        <div key={i} style={{
+                          height: 10, borderRadius: 5,
+                          background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(201,164,74,0.08) 50%, rgba(255,255,255,0.04) 75%)',
+                          backgroundSize: '200% 100%',
+                          animation: 'shimmer 1.5s ease infinite',
+                          width: i === 4 ? '55%' : `${75 + Math.random() * 20}%`,
+                        }} />
+                      ))}
+                      <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+                    </div>
+                  )}
+                  {aiError && !aiLoading && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0', flexWrap: 'wrap' }}>
+                      <AlertTriangle size={13} color="var(--luz-danger)" style={{ opacity: 0.7 }} />
+                      <span style={{ color: 'var(--luz-gray-dark)', fontSize: 12, flex: 1 }}>{aiError}</span>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={loadAiSummary} style={{ fontSize: 11, gap: 4, padding: '2px 8px' }}>
+                        <RefreshCw size={10} /> Retry
+                      </button>
+                    </div>
+                  )}
+                  {aiSummary && !aiLoading && (
+                    <div style={{ paddingTop: 10 }}>
+                      {renderMarkdownSections(aiSummary)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="card glass-card animate-fade-in-up" style={{ animationDelay: '300ms', position: 'sticky', top: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                <Calendar size={16} color="var(--luz-gold)" />

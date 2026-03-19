@@ -28,11 +28,15 @@ recordsRouter.get('/:patientId/pre-consult-summary', async (req: AuthRequest, re
     'SELECT id, exam_date, lab_name FROM lab_exams WHERE patient_id = ? ORDER BY exam_date DESC LIMIT 2'
   ).all(patientId) as Array<Record<string, unknown>>;
 
-  const examsWithMarkers = exams.map((exam) => {
+  const examsWithMarkers: Array<{ exam_date: string; lab_name?: string; markers: Array<Record<string, unknown>> }> = exams.map((exam: Record<string, unknown>) => {
     const markers = db.prepare(
       'SELECT marker_name, value, unit, status, ref_min, ref_max FROM lab_markers WHERE exam_id = ? ORDER BY marker_category, marker_name'
     ).all(exam.id as string) as Array<Record<string, unknown>>;
-    return { ...exam, markers };
+    return {
+      exam_date: String(exam.exam_date),
+      lab_name: exam.lab_name as string | undefined,
+      markers,
+    };
   });
 
   const data: PreConsultData = {
@@ -55,9 +59,9 @@ recordsRouter.get('/:patientId/pre-consult-summary', async (req: AuthRequest, re
       soap_plan: r.soap_plan as string | undefined,
     })),
     recentExams: examsWithMarkers.map((e) => ({
-      exam_date: String(e.exam_date),
-      lab_name: e.lab_name as string | undefined,
-      markers: (e.markers as Array<Record<string, unknown>>).map((m) => ({
+      exam_date: e.exam_date,
+      lab_name: e.lab_name,
+      markers: e.markers.map((m) => ({
         marker_name: String(m.marker_name),
         value: Number(m.value),
         unit: String(m.unit),
