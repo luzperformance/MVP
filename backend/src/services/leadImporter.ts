@@ -1,6 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import { generateWithGemini } from './geminiClient';
 
 const LEAD_FIELDS = [
   'name', 'email', 'phone', 'company', 'source', 'status',
@@ -136,9 +134,7 @@ export async function processImportWithGemini(
 ${sourceHint ? `DICA: Os dados vieram de "${sourceHint}"\n` : ''}
 ${dataDescription}`;
 
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
+  const text = await generateWithGemini(prompt);
   const clean = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '');
 
   const parsed: ImportResult = JSON.parse(clean);
