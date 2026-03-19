@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-      - ./C:/Users/luzar/.gemini/antigravity/brain/661f01b3-b1be-4033-a603-0ef060d73ae1/postgresql_schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./data/init-db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
   backend:
     build: ./backend
