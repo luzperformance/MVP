@@ -1,6 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import { generateWithGemini } from './geminiClient';
 
 const SCORING_PROMPT = `Você é um assistente de CRM para um médico de medicina esportiva e performance hormonal (LuzPerformance).
 
@@ -84,15 +82,12 @@ export async function scoreLeadWithAI(leadData: {
   activities_count?: number;
   days_since_creation?: number;
 }): Promise<ScoreResult> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
   const prompt = `${SCORING_PROMPT}
 
 DADOS DO LEAD:
 ${JSON.stringify(leadData, null, 2)}`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
+  const text = await generateWithGemini(prompt);
   const clean = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '');
   const parsed: ScoreResult = JSON.parse(clean);
 

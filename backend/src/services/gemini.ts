@@ -1,6 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import { generateWithGemini } from './geminiClient';
 
 const SYSTEM_PROMPT = `Você é um assistente médico especializado em documentação clínica para um médico de medicina do esporte e performance hormonal no Brasil.
 
@@ -31,8 +29,6 @@ export async function processTranscription(
   soap_assessment: string;
   soap_plan: string;
 }> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
   const prompt = `${SYSTEM_PROMPT}
 
 ${patientContext ? `CONTEXTO DO PACIENTE (não incluir no SOAP, apenas para referência):\n${patientContext}\n\n` : ''}
@@ -42,8 +38,7 @@ ${rawInput}
 
 Retorne apenas o JSON, sem markdown ou texto adicional.`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
+  const text = await generateWithGemini(prompt);
 
   // Clean potential markdown code blocks
   const clean = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '');
