@@ -8,13 +8,13 @@ import {
 
 const SIDEBAR_COLLAPSED_KEY = 'prontuario-sidebar-collapsed';
 
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/patients', icon: Users, label: 'Pacientes' },
-  { to: '/consultas', icon: Stethoscope, label: 'Consultas' },
-  { to: '/agenda', icon: Calendar, label: 'Agenda' },
-  { to: '/finance', icon: DollarSign, label: 'Financeiro' },
-];
+const NAV_PAGES = {
+  dashboard: { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  patients: { to: '/patients', icon: Users, label: 'Pacientes' },
+  consultas: { to: '/consultas', icon: Stethoscope, label: 'Consultas' },
+  mes: { to: '/agenda', icon: Calendar, label: 'Mês' },
+  finance: { to: '/finance', icon: DollarSign, label: 'Financeiro' },
+};
 
 const crmItems = [
   { to: '/gestao', icon: ClipboardList, label: 'Gestão' },
@@ -116,18 +116,35 @@ export default function AppLayout() {
         <nav className="sidebar-nav">
           <div className="nav-section">
             <div className="nav-section-title">Menu</div>
-            {navItems.map(({ to, icon: Icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
-                onClick={closeSidebar}
-                title={sidebarCollapsed ? label : undefined}
-              >
-                <Icon size={20} aria-hidden />
-                <span className="nav-item-label">{label}</span>
+            
+            {/* Base nav items everyone sees */}
+            <NavLink to={NAV_PAGES.dashboard.to} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} onClick={closeSidebar} title={sidebarCollapsed ? NAV_PAGES.dashboard.label : undefined}>
+              <NAV_PAGES.dashboard.icon size={20} aria-hidden />
+              <span className="nav-item-label">{NAV_PAGES.dashboard.label}</span>
+            </NavLink>
+
+            {/* Conditionally render based on permissions */}
+            {(doctor?.can_access_records) && (
+              <NavLink to={NAV_PAGES.patients.to} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} onClick={closeSidebar} title={sidebarCollapsed ? NAV_PAGES.patients.label : undefined}>
+                <NAV_PAGES.patients.icon size={20} aria-hidden />
+                <span className="nav-item-label">{NAV_PAGES.patients.label}</span>
               </NavLink>
-            ))}
+            )}
+
+            <NavLink to={NAV_PAGES.consultas.to} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} onClick={closeSidebar} title={sidebarCollapsed ? NAV_PAGES.consultas.label : undefined}>
+              <NAV_PAGES.consultas.icon size={20} aria-hidden />
+              <span className="nav-item-label">{NAV_PAGES.consultas.label}</span>
+            </NavLink>
+
+            <NavLink to={NAV_PAGES.mes.to} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} onClick={closeSidebar} title={sidebarCollapsed ? NAV_PAGES.mes.label : undefined}>
+              <NAV_PAGES.mes.icon size={20} aria-hidden />
+              <span className="nav-item-label">{NAV_PAGES.mes.label}</span>
+            </NavLink>
+
+            <NavLink to={NAV_PAGES.finance.to} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} onClick={closeSidebar} title={sidebarCollapsed ? NAV_PAGES.finance.label : undefined}>
+              <NAV_PAGES.finance.icon size={20} aria-hidden />
+              <span className="nav-item-label">{NAV_PAGES.finance.label}</span>
+            </NavLink>
           </div>
           <div className="nav-section">
             <div className="nav-section-title">CRM</div>
@@ -151,7 +168,15 @@ export default function AppLayout() {
           {doctor && (
             <div className="sidebar-footer-doctor">
               <div className="sidebar-footer-doctor-name">{doctor.name}</div>
-              <div className="sidebar-footer-doctor-crm">CRM {doctor.crm}</div>
+              <div className="sidebar-footer-doctor-crm" style={{ marginBottom: 6 }}>CRM {doctor.crm}</div>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {doctor.can_access_records && (
+                  <span style={{ fontSize: 9, padding: '2px 4px', background: 'rgba(52, 168, 83, 0.2)', color: '#34a853', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prontuário</span>
+                )}
+                {doctor.can_edit_agenda && (
+                  <span style={{ fontSize: 9, padding: '2px 4px', background: 'rgba(66, 133, 244, 0.2)', color: '#4285f4', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agenda</span>
+                )}
+              </div>
             </div>
           )}
           <button type="button" className="btn btn-ghost btn-sm nav-logout-btn" onClick={handleLogout} title="Sair">

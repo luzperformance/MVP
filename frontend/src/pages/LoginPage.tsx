@@ -1,113 +1,85 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Activity, Lock, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import { Activity } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: 'drluzardi93@gmail.com',
+    password: '',
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const setAuth = useAuthStore(s => s.setAuth);
-  const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const navigate = useNavigate();
+  const login = useAuthStore((s) => s.login);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setError('');
+  }, []);
+
+  const handleLogin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        setError(body?.error || (res.status === 401 ? 'E-mail ou senha incorretos.' : 'Erro ao fazer login.'));
-        return;
+      const success = await login(formData.email, formData.password);
+      if (success) {
+        navigate('/');
+      } else {
+        setError('Credenciais inválidas. Verifique seu e-mail e senha.');
       }
-
-      const data = await res.json();
-      setAuth(data.token, data.doctor);
-      navigate('/dashboard');
-    } catch {
-      setError('Erro de conexão com o servidor.');
+    } catch (err: any) {
+      setError(err.message || 'Falha na autenticação.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData.email, formData.password, login, navigate]);
 
   return (
     <div className="login-page">
       <div className="login-page-inner">
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 60, height: 60,
-            background: 'rgba(201,164,74,0.15)',
-            borderRadius: '50%',
-            border: '1px solid rgba(201,164,74,0.3)',
-            marginBottom: 16,
-          }}>
-            <Activity size={28} color="var(--luz-gold)" aria-hidden />
-          </div>
-          <h1 className="font-display" style={{
-            fontSize: 20,
-            color: 'var(--luz-gold)',
-            letterSpacing: '0.1em',
-          }}>PRONTUÁRIO</h1>
-          <p style={{ fontSize: 13, color: 'var(--luz-gray-dark)', marginTop: 4 }}>
-            LuzPerformance &mdash; Acesso Restrito
-          </p>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <Activity size={40} color="var(--luz-gold)" style={{ marginBottom: 16 }} aria-hidden />
+          <h1 className="font-display" style={{ fontSize: 20, color: 'var(--luz-gold)' }}>PRONTUÁRIO</h1>
+          <p style={{ fontSize: 13, color: 'var(--luz-gray-dark)', marginTop: 8 }}>LuzPerformance — Acesso Restrito</p>
         </div>
 
         <form onSubmit={handleLogin} className="card animate-fade-in-up" noValidate>
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 18 }}>
             <label htmlFor="login-email" className="form-label">E-mail</label>
             <input
               id="login-email"
+              name="email"
               type="email"
               className="form-input"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
               placeholder="dr@luzperformance.com.br"
+              value={formData.email}
+              onChange={handleInputChange}
               required
               autoComplete="email"
-              autoFocus
             />
           </div>
 
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: 18 }}>
             <label htmlFor="login-password" className="form-label">Senha</label>
             <input
               id="login-password"
+              name="password"
               type="password"
               className="form-input"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="••••••"
+              value={formData.password}
+              onChange={handleInputChange}
               required
               autoComplete="current-password"
             />
           </div>
 
           {error && (
-            <div
-              role="alert"
-              style={{
-                background: 'rgba(239,68,68,0.1)',
-                border: '1px solid rgba(239,68,68,0.3)',
-                borderRadius: 8,
-                padding: '10px 14px',
-                fontSize: 13,
-                color: '#ef4444',
-                marginBottom: 20,
-              }}
-            >
+            <div className="alert alert-error" role="alert" style={{ marginBottom: 16 }}>
               {error}
             </div>
           )}
@@ -115,14 +87,13 @@ export default function LoginPage() {
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
-
-          <p style={{ fontSize: 12, color: 'var(--luz-gray-dark)', textAlign: 'center', marginTop: 16 }}>
-            Primeiro acesso?{' '}
-            <a href="/setup" className="login-setup-link">
-              Configurar conta
-            </a>
-          </p>
         </form>
+
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
+          <Link to="/setup" className="login-setup-link">
+            Primeiro acesso? Configurar conta
+          </Link>
+        </div>
       </div>
     </div>
   );

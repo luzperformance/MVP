@@ -5,6 +5,8 @@ export interface Doctor {
   name: string;
   email: string;
   crm: string;
+  can_access_records?: boolean;
+  can_edit_agenda?: boolean;
 }
 
 export interface Patient {
@@ -33,6 +35,7 @@ export interface Record {
   soap_assessment?: string;
   soap_plan?: string;
   notes?: string;
+  content: string;
   consultation_date: string;
   duration_minutes?: number;
   created_at: string;
@@ -259,6 +262,26 @@ export interface PatientManagement {
   mgmt_status?: MgmtStatus;
   uses_ea?: boolean;
   wants_children?: boolean;
+  
+  // New Medical / Admin Fields
+  mother_name?: string;
+  children_info?: string;
+  weight_height?: string;
+  future_children?: string;
+  cpf?: string;
+  cep_address?: string;
+  civil_status?: string;
+  health_plan?: string;
+  other_professionals?: string;
+  hometown_current?: string;
+  profession?: string;
+  medical_history?: string; // Problems, meds, capsules
+  hormone_use?: string;
+  male_specific?: {
+    libido_erection?: string;
+    children_details?: string; // Number of children and if wants in 6 months
+  };
+
   observations?: string;
   notes?: string;
   origin?: string;
@@ -284,4 +307,43 @@ export interface GestaoSummary {
   upcomingConsultations: number;
   byPackage: { type: string; count: number }[];
   byState: { state: string; count: number }[];
+}
+
+// Alerts
+export type AlertType =
+  | 'patient_inactive'
+  | 'contract_expiring'
+  | 'exam_overdue'
+  | 'lead_hot_no_followup'
+  | 'payment_overdue'
+  | 'consultation_today';
+
+export type AlertSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export interface Alert {
+  id: string;
+  type: AlertType;
+  severity: AlertSeverity;
+  title: string;
+  description: string;
+  entity_type: 'patient' | 'lead';
+  entity_id: string;
+  entity_name: string;
+  action_url: string;
+  created_at: string;
+  data?: { [key: string]: unknown };
+}
+
+export interface AlertsSummary {
+  total: number;
+  critical: number;
+  high: number;
+  by_type: {
+    patient_inactive: number;
+    contract_expiring: number;
+    exam_overdue: number;
+    lead_hot_no_followup: number;
+    payment_overdue: number;
+    consultation_today: number;
+  };
 }

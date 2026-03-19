@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS patient_bi_layouts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_id INTEGER NOT NULL,
+  doctor_id INTEGER NOT NULL,
+  layout_data TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(patient_id) REFERENCES patients(id),
+  FOREIGN KEY(doctor_id) REFERENCES doctor(id)
+);

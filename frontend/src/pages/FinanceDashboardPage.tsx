@@ -1,15 +1,35 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell
 } from 'recharts';
-import { TrendingUp, DollarSign, ArrowDownCircle, ArrowUpCircle, Plus, Upload, FileSpreadsheet } from 'lucide-react';
+import { TrendingUp, DollarSign, ArrowDownCircle, ArrowUpCircle, Plus, Upload, FileSpreadsheet, Calendar, PieChart as PieIcon, ListFilter } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import type { FinanceSummaryResponse } from '@shared/types';
 
+// Otimização Vercel: Constantes fora do componente
 const REVENUE_COLOR = '#22c55e';
 const EXPENSE_COLOR = '#ef4444';
 const RESULT_POSITIVE = '#22c55e';
 const RESULT_NEGATIVE = '#ef4444';
+const PIE_COLORS = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#6366f1'];
+
+const CHART_MARGIN = { top: 10, right: 20, left: 0, bottom: 5 };
+const CHART_GRID_STROKE = "rgba(255,255,255,0.05)";
+const CHART_TICK_STYLE = { fontSize: 11 };
+
+const SummaryKPICard = React.memo(({ title, value, color, icon: Icon, subValue }: any) => (
+  <div className="card animate-fade-in-up kpi-card">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+      <Icon size={20} color={color} aria-hidden />
+      <span className="exam-section-label" style={{ marginBottom: 0 }}>{title}</span>
+    </div>
+    <div className="font-display" style={{ fontSize: 20, fontWeight: 700, color }}>
+      {value}
+    </div>
+    {subValue && <div style={{ fontSize: 10, color: 'var(--luz-gray-dark)', marginTop: 4 }}>{subValue}</div>}
+  </div>
+));
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -22,7 +42,7 @@ function formatCurrency(value: number): string {
 
 export default function FinanceDashboardPage() {
   const token = useAuthStore(s => s.token);
-  const [data, setData] = useState<FinanceSummaryResponse | null>(null);
+  const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(6);
   const [showForm, setShowForm] = useState(false);
@@ -31,7 +51,11 @@ export default function FinanceDashboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ imported: number; totalRows: number; errors?: { row: number; message: string }[]; message: string } | null>(null);
+  const [importResult, setImportResult] = useState<any | null>(null);
+  
+  // Novos estados para filtros
+  const [customDates, setCustomDates] = useState({ from: '', to: '' });
+  const [showFilters, setShowFilters] = useState(false);
 
   const csvInputRef = useRef<HTMLInputElement | null>(null);
   const mountedRef = useRef(true);
@@ -39,7 +63,12 @@ export default function FinanceDashboardPage() {
   const fetchSummary = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/finance/summary?period=${period}`, {
+      let url = `/api/finance/summary?period=${period}`;
+      if (customDates.from && customDates.to) {
+        url = `/api/finance/summary?from=${customDates.from}&to=${customDates.to}`;
+      }
+      
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
         signal,
       });
@@ -48,20 +77,18 @@ export default function FinanceDashboardPage() {
         if (mountedRef.current) setData(null);
         return;
       }
-      if (mountedRef.current) setData(json as FinanceSummaryResponse);
+      if (mountedRef.current) setData(json);
     } catch {
       if (mountedRef.current) setData(null);
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [token, period]);
+  }, [token, period, customDates]);
 
   useEffect(() => {
     mountedRef.current = true;
     const controller = new AbortController();
-    // Requisição cancelada quando sair da tela (evita updates em componente desmontado)
     fetchSummary(controller.signal);
-
     return () => {
       mountedRef.current = false;
       controller.abort();
@@ -92,8 +119,8 @@ export default function FinanceDashboardPage() {
           description: form.description.trim() || undefined,
         }),
       });
-      const json = await res.json();
       if (!res.ok) {
+        const json = await res.json();
         if (mountedRef.current) {
           setSubmitError(json.error || 'Erro ao salvar.');
           setSubmitting(false);
@@ -140,7 +167,7 @@ export default function FinanceDashboardPage() {
       if (mountedRef.current) {
         setImportResult({
           imported: json.imported ?? 0,
-          totalRows: json.totalRows ?? 0,
+          totalRows: json.total ?? 0,
           errors: json.errors,
           message: json.message || `${json.imported} lançamento(s) importado(s).`,
         });
@@ -156,7 +183,7 @@ export default function FinanceDashboardPage() {
 
   const chartData = React.useMemo(() => {
     if (!data?.monthly?.length) return [];
-    return data.monthly.map(m => ({
+    return data.monthly.map((m: any) => ({
       ...m,
       monthLabel: new Date(m.month + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
     }));
@@ -165,281 +192,181 @@ export default function FinanceDashboardPage() {
   const hasKpis = data && typeof data.kpis === 'object';
 
   return (
-    <div className="finance-dashboard">
-      <div className="page-header">
+    <div className="finance-dashboard animate-fade-in">
+      <div className="page-header glass-surface">
         <DollarSign size={20} color="var(--luz-gold)" aria-hidden />
-        <div>
-          <div className="font-display" style={{ fontWeight: 700, color: 'var(--luz-white)', fontSize: 16, letterSpacing: '0.02em' }}>
-            Dashboard Financeiro
+        <div style={{ flex: 1 }}>
+          <div className="font-display text-gold-gradient" style={{ fontWeight: 700, fontSize: 18, letterSpacing: '0.04em' }}>
+            Gestão Financeira
           </div>
-          <div style={{ fontSize: 12, color: 'var(--luz-gray-dark)' }}>
-            Receitas, despesas e resultado
+          <div style={{ fontSize: 12, color: 'var(--luz-gray-dark)', fontWeight: 500 }}>
+            Saúde econômica e projeções de performance
           </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowFilters(!showFilters)}>
+            <ListFilter size={16} /> Filtros
+          </button>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowForm(!showForm)}>
+            <Plus size={16} /> Novo Lançamento
+          </button>
         </div>
       </div>
 
-      <div className="page-content">
+      <div className="page-content grid-pattern">
         {loading ? (
-          <div className="finance-loading">
+          <div className="finance-loading" style={{ minHeight: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div className="finance-loading-spinner" aria-hidden />
-            <p>Carregando dados financeiros...</p>
+            <p style={{ marginTop: 20, color: 'var(--luz-gray-dark)', fontSize: 14 }}>Sincronizando dados...</p>
           </div>
         ) : !hasKpis ? (
-          <div className="card animate-fade-in-up finance-empty-state">
-            <DollarSign size={48} color="var(--luz-gold)" className="finance-empty-icon" aria-hidden />
-            <h3 className="exam-section-title">Não foi possível carregar os dados</h3>
-            <p>Verifique se o servidor está rodando e se você está logado. A rota é <code>/api/finance/summary</code>.</p>
+          <div className="card glass-card animate-fade-in-up" style={{ textAlign: 'center', padding: 64 }}>
+            <DollarSign size={48} color="rgba(201,164,74,0.2)" style={{ marginBottom: 16 }} />
+            <h3 className="font-display">Ops! Nenhum dado financeiro.</h3>
+            <p style={{ color: 'var(--luz-gray-dark)', margin: '12px 0 24px' }}>Inicie novos lançamentos ou importe uma planilha para ver o dashboard.</p>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>Começar agora</button>
           </div>
         ) : (
-          <div className="stagger stagger-sections finance-dashboard-content">
-            {/* Period + Add entry */}
-            <div className="card animate-fade-in-up" style={{ marginBottom: 20, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-              <div>
-                <div className="exam-section-label" style={{ marginBottom: 12 }}>Período</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {[3, 6, 12].map(m => (
-                    <button
-                      key={m}
-                      type="button"
-                      className={`btn btn-sm ${period === m ? 'btn-primary' : 'btn-ghost'}`}
-                      onClick={() => setPeriod(m)}
-                    >
-                      {m} meses
-                    </button>
-                  ))}
+          <div className="stagger stagger-sections">
+            
+            {/* Extended Filters */}
+            {showFilters && (
+              <div className="card glass-card animate-fade-in-down" style={{ marginBottom: 24, padding: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, alignItems: 'end' }}>
+                  <div>
+                    <label className="form-label-sm">Período Predefinido</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {[3, 6, 12].map(m => (
+                        <button key={m} onClick={() => { setPeriod(m); setCustomDates({from:'', to:''}); }} className={`btn btn-sm ${period === m && !customDates.from ? 'btn-primary' : 'btn-ghost'}`}>{m} meses</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label-sm">Início</label>
+                    <input type="date" className="form-input-sm" value={customDates.from} onChange={e => setCustomDates(d => ({ ...d, from: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="form-label-sm">Fim</label>
+                    <input type="date" className="form-input-sm" value={customDates.to} onChange={e => setCustomDates(d => ({ ...d, to: e.target.value }))} />
+                  </div>
                 </div>
               </div>
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowForm(!showForm)}>
-                <Plus size={16} aria-hidden />
-                {showForm ? 'Fechar' : 'Novo lançamento'}
-              </button>
+            )}
+
+            {/* Main KPIs */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 24 }}>
+              <SummaryKPICard title="Receita (Mês)" value={formatCurrency(data.kpis.revenueMonth)} color={REVENUE_COLOR} icon={ArrowUpCircle} />
+              <SummaryKPICard title="Despesas (Mês)" value={formatCurrency(data.kpis.expenseMonth)} color={EXPENSE_COLOR} icon={ArrowDownCircle} />
+              <SummaryKPICard title="Resultado (Mês)" value={formatCurrency(data.kpis.resultMonth)} color={data.kpis.resultMonth >= 0 ? RESULT_POSITIVE : RESULT_NEGATIVE} icon={TrendingUp} />
+              <SummaryKPICard title="EBITDA Projetado (Ano)" value={formatCurrency(data.kpis.projectedAnnualProfit)} color="var(--luz-gold)" icon={TrendingUp} subValue="Baseado na média mensal do período" />
             </div>
 
-            {/* Atualizar por planilha CSV */}
-            <div className="card animate-fade-in-up finance-import-card" style={{ marginBottom: 20 }}>
-              <h3 className="exam-section-title" style={{ marginBottom: 12 }}>
-                <FileSpreadsheet size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} aria-hidden />
-                Atualizar por planilha
-              </h3>
-              <p className="finance-import-hint" style={{ fontSize: 12, color: 'var(--luz-gray-dark)', marginBottom: 16 }}>
-                Envie um CSV com colunas: <code>tipo</code> (receita/despesa), <code>categoria</code>, <code>valor</code>, <code>data</code> (AAAA-MM-DD ou DD/MM/AAAA). Opcional: <code>descricao</code>.
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-                <input
-                  id="finance-csv-input"
-                  ref={csvInputRef}
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={e => {
-                    setImportFile(e.target.files?.[0] ?? null);
-                    setImportResult(null);
-                  }}
-                  className="finance-import-input"
-                  aria-label="Selecionar arquivo CSV"
-                />
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={handleImportCsv}
-                  disabled={!importFile || importing}
-                  aria-label="Importar CSV"
-                >
-                  <Upload size={16} aria-hidden />
-                  {importing ? 'Importando...' : 'Importar CSV'}
-                </button>
-                {importFile && (
-                  <span style={{ fontSize: 12, color: 'var(--luz-gray)' }}>
-                    {importFile.name}
-                  </span>
-                )}
-              </div>
-              {importResult && (
-                <div className="finance-import-result" style={{ marginTop: 16 }}>
-                  <p style={{ color: importResult.imported > 0 ? 'var(--luz-success)' : 'var(--luz-gray)', fontSize: 13, marginBottom: importResult.errors?.length ? 8 : 0 }}>
-                    {importResult.message}
-                  </p>
-                  {importResult.errors && importResult.errors.length > 0 && (
-                    <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: 'var(--luz-warning)' }}>
-                      {importResult.errors.slice(0, 10).map((err, i) => (
-                        <li key={i}>Linha {err.row}: {err.message}</li>
+            {/* Charts Section */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, marginBottom: 24 }}>
+              {/* Evolution Chart */}
+              {chartData.length > 0 ? (
+                <div className="card glass-card" style={{ padding: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+                    <Calendar size={18} color="var(--luz-gold)" />
+                    <h3 className="font-display" style={{ fontSize: 14, margin: 0 }}>Evolução Mensal</h3>
+                  </div>
+                  <div style={{ height: 300 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={CHART_MARGIN}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
+                        <XAxis dataKey="monthLabel" stroke="var(--luz-gray-dark)" tick={CHART_TICK_STYLE} />
+                        <YAxis stroke="var(--luz-gray-dark)" tick={CHART_TICK_STYLE} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                        <Tooltip contentStyle={{ background: 'rgba(13,31,51,0.95)', border: '1px solid var(--luz-gold)', borderRadius: 12 }} />
+                        <Bar dataKey="revenue" name="Receita" fill={REVENUE_COLOR} radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="expense" name="Despesa" fill={EXPENSE_COLOR} radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Category Breakdown (Pie Chart) */}
+              {data.categories?.length > 0 ? (
+                <div className="card glass-card" style={{ padding: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+                    <PieIcon size={18} color="var(--luz-gold)" />
+                    <h3 className="font-display" style={{ fontSize: 14, margin: 0 }}>Mix de Despesas</h3>
+                  </div>
+                  <div style={{ display: 'flex', height: 300, alignItems: 'center' }}>
+                    <div style={{ flex: 1, height: '100%' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={data.categories}
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                            nameKey="name"
+                          >
+                            {data.categories.map((_: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {data.categories.slice(0, 5).map((cat: any, i: number) => (
+                        <div key={cat.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 12, height: 12, borderRadius: '2px', background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                          <div style={{ flex: 1, fontSize: 11, color: 'var(--luz-white)', fontWeight: 500 }}>{cat.name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--luz-gray-dark)' }}>{formatCurrency(cat.value)}</div>
+                        </div>
                       ))}
-                      {importResult.errors.length > 10 && (
-                        <li>… e mais {importResult.errors.length - 10} erro(s)</li>
-                      )}
-                    </ul>
-                  )}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            {/* Quick Actions (Add/Import) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+              {showForm && (
+                <div className="card glass-card animate-fade-in-up" style={{ padding: 24 }}>
+                  <h3 className="font-display" style={{ fontSize: 13, color: 'var(--luz-gold)', marginBottom: 20 }}>NOVO LANÇAMENTO</h3>
+                  <form onSubmit={handleSubmitEntry}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                      <select className="form-input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as any }))}>
+                        <option value="revenue">Receita (+)</option>
+                        <option value="expense">Despesa (-)</option>
+                      </select>
+                      <input type="text" className="form-input" placeholder="Categoria" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} required />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                      <input type="number" className="form-input" placeholder="Valor (R$)" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
+                      <input type="date" className="form-input" value={form.entry_date} onChange={e => setForm(f => ({ ...f, entry_date: e.target.value }))} required />
+                    </div>
+                    <input type="text" className="form-input" placeholder="Descrição (opcional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} style={{ marginBottom: 20 }} />
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitting}>Salvar Registro</button>
+                  </form>
                 </div>
               )}
-            </div>
-
-            {showForm && (
-              <div className="card animate-fade-in-up" style={{ marginBottom: 20 }}>
-                <h3 className="exam-section-title" style={{ marginBottom: 16 }}>Novo lançamento</h3>
-                <form onSubmit={handleSubmitEntry}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginBottom: 16 }}>
-                    <div>
-                      <label className="form-label">Tipo</label>
-                      <select
-                        className="form-input"
-                        value={form.type}
-                        onChange={e => setForm(f => ({ ...f, type: e.target.value as 'revenue' | 'expense' }))}
-                        style={{ minHeight: 44 }}
-                      >
-                        <option value="revenue">Receita</option>
-                        <option value="expense">Despesa</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="form-label">Categoria</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Ex: Consultas, Aluguel"
-                        value={form.category}
-                        onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="form-label">Valor (R$)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        className="form-input"
-                        placeholder="0,00"
-                        value={form.amount}
-                        onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="form-label">Data</label>
-                      <input
-                        type="date"
-                        className="form-input"
-                        value={form.entry_date}
-                        onChange={e => setForm(f => ({ ...f, entry_date: e.target.value }))}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div style={{ marginBottom: 16 }}>
-                    <label className="form-label">Descrição (opcional)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Ex: Consulta Dr. Silva"
-                      value={form.description}
-                      onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    />
-                  </div>
-                  {submitError && <p style={{ color: 'var(--luz-danger)', fontSize: 13, marginBottom: 12 }}>{submitError}</p>}
-                  <button type="submit" className="btn btn-primary" disabled={submitting}>
-                    {submitting ? 'Salvando...' : 'Salvar lançamento'}
+              
+              <div className="card glass-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <h3 className="font-display" style={{ fontSize: 13, color: 'var(--luz-gold)', marginBottom: 12 }}>IMPORTAÇÃO RÁPIDA</h3>
+                <p style={{ fontSize: 11, color: 'var(--luz-gray-dark)', marginBottom: 20 }}>Atualize seu financeiro enviando uma planilha CSV.</p>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <input ref={csvInputRef} type="file" hidden accept=".csv" onChange={e => setImportFile(e.target.files?.[0] ?? null)} />
+                  <button className="btn btn-ghost btn-sm" style={{ flex: 1 }} onClick={() => csvInputRef.current?.click()}>
+                    <FileSpreadsheet size={16} /> {importFile ? importFile.name.slice(0,10)+'...' : 'Escolher Arquivo'}
                   </button>
-                </form>
-              </div>
-            )}
-
-            {/* KPI cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
-              <div className="card animate-fade-in-up kpi-card">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <ArrowUpCircle size={20} color={REVENUE_COLOR} aria-hidden />
-                  <span className="exam-section-label" style={{ marginBottom: 0 }}>Receita (mês)</span>
+                  <button className="btn btn-secondary btn-sm" onClick={handleImportCsv} disabled={!importFile || importing}>
+                    {importing ? 'Processando...' : 'Fazer Upload'}
+                  </button>
                 </div>
-                <div className="font-display" style={{ fontSize: 20, fontWeight: 700, color: REVENUE_COLOR }}>
-                  {formatCurrency(data.kpis.revenueMonth)}
-                </div>
-              </div>
-              <div className="card animate-fade-in-up kpi-card">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <ArrowDownCircle size={20} color={EXPENSE_COLOR} aria-hidden />
-                  <span className="exam-section-label" style={{ marginBottom: 0 }}>Despesas (mês)</span>
-                </div>
-                <div className="font-display" style={{ fontSize: 20, fontWeight: 700, color: EXPENSE_COLOR }}>
-                  {formatCurrency(data.kpis.expenseMonth)}
-                </div>
-              </div>
-              <div className="card animate-fade-in-up kpi-card">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <TrendingUp size={20} color={data.kpis.resultMonth >= 0 ? RESULT_POSITIVE : RESULT_NEGATIVE} aria-hidden />
-                  <span className="exam-section-label" style={{ marginBottom: 0 }}>Resultado (mês)</span>
-                </div>
-                <div
-                  className="font-display"
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 700,
-                    color: data.kpis.resultMonth >= 0 ? RESULT_POSITIVE : RESULT_NEGATIVE,
-                  }}
-                >
-                  {formatCurrency(data.kpis.resultMonth)}
-                </div>
+                {importResult && (
+                  <div style={{ marginTop: 12, fontSize: 11, color: 'var(--luz-success)' }}>{importResult.message}</div>
+                )}
               </div>
             </div>
 
-            {/* Totals in period */}
-            <div className="card animate-fade-in-up" style={{ marginBottom: 20 }}>
-              <h3 className="exam-section-title" style={{ marginBottom: 16 }}>Totais no período</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16 }}>
-                <div>
-                  <div style={{ fontSize: 11, color: 'var(--luz-gray-dark)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Receita total</div>
-                  <div className="font-display" style={{ fontSize: 16, fontWeight: 700, color: REVENUE_COLOR }}>{formatCurrency(data.kpis.revenueTotal)}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: 'var(--luz-gray-dark)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Despesas total</div>
-                  <div className="font-display" style={{ fontSize: 16, fontWeight: 700, color: EXPENSE_COLOR }}>{formatCurrency(data.kpis.expenseTotal)}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: 'var(--luz-gray-dark)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Resultado</div>
-                  <div
-                    className="font-display"
-                    style={{ fontSize: 16, fontWeight: 700, color: data.kpis.resultTotal >= 0 ? RESULT_POSITIVE : RESULT_NEGATIVE }}
-                  >
-                    {formatCurrency(data.kpis.resultTotal)}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Chart */}
-            {chartData.length > 0 && (
-              <div className="card animate-fade-in-up finance-chart-card">
-                <h3 className="exam-section-title" style={{ marginBottom: 20 }}>Receita x Despesa por mês</h3>
-                <div className="finance-chart-wrap">
-                  <ResponsiveContainer width="100%" height={380}>
-                    <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="monthLabel" stroke="var(--luz-gray-dark)" tick={{ fontSize: 11 }} />
-                      <YAxis stroke="var(--luz-gray-dark)" tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip
-                        contentStyle={{
-                          background: 'var(--luz-navy)',
-                          border: '1px solid rgba(201,164,74,0.3)',
-                          borderRadius: 8,
-                          color: 'var(--luz-white)',
-                        }}
-                        formatter={(value: number) => [formatCurrency(value), '']}
-                        labelFormatter={label => label}
-                      />
-                      <Legend />
-                      <Bar dataKey="revenue" name="Receita" fill={REVENUE_COLOR} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="expense" name="Despesa" fill={EXPENSE_COLOR} radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-
-            {chartData.length === 0 && hasKpis && (
-              <div className="card animate-fade-in-up finance-empty-chart">
-                <DollarSign size={40} color="var(--luz-gold)" aria-hidden />
-                <p>Nenhum lançamento no período.</p>
-                <p className="finance-empty-hint">Clique em &quot;Novo lançamento&quot; para cadastrar receitas e despesas.</p>
-              </div>
-            )}
           </div>
         )}
       </div>
