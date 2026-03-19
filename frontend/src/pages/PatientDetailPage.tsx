@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, FlaskConical, Camera, FileText, User, Phone, Mail, Calendar } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import type { Patient } from '@shared/types';
+import DashboardBIContainer from '../components/bi/DashboardBIContainer';
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -159,6 +160,9 @@ export default function PatientDetailPage() {
             <Camera size={14} aria-hidden /> Fotos
           </Link>
         </div>
+
+        {/* BI Dashboard Module */}
+        <DashboardBIContainer patientId={id!} />
       </div>
     </div>
   );
