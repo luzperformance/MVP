@@ -95,7 +95,6 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 async function seedDefaultUsers() {
   const users = [
     { email: 'drluzardi93@gmail.com', password: 'teste1', name: 'Dr. Vinícius Luzardi', crm: 'SC-33489' },
-    { email: 'luzardi18@gmail.com', password: '1234', name: 'Dr. Luzardi', crm: 'SC-33489' },
   ];
 
   for (const u of users) {
