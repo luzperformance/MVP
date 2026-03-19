@@ -94,7 +94,24 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 // === SEED DEFAULT USERS ===
 async function seedDefaultUsers() {
   const users = [
-    { email: 'drluzardi93@gmail.com', password: 'teste1', name: 'Dr. Vinícius Luzardi', crm: 'SC-33489' },
+    {
+      email: 'drluzardi93@gmail.com',
+      password: 'teste1',
+      name: 'Dr. Vinícius Luzardi',
+      crm: 'SC-33489',
+      can_access_records: true,
+      can_edit_agenda: true,
+      is_admin: true,
+    },
+    {
+      email: 'almeidadanigomes@gmail.com',
+      password: 'Dani@123',
+      name: 'Dani Gomes Almeida (Secretária)',
+      crm: 'N/A',
+      can_access_records: false,
+      can_edit_agenda: true,
+      is_admin: true,
+    },
   ];
 
   for (const u of users) {
@@ -103,18 +120,30 @@ async function seedDefaultUsers() {
     if (USE_PG) {
       await pool.query(
         `INSERT INTO doctor (email, password_hash, name, crm, can_access_records, can_edit_agenda, is_admin)
-         VALUES ($1, $2, $3, $4, TRUE, TRUE, TRUE)
-         ON CONFLICT (email) DO UPDATE SET password_hash = $2`,
-        [u.email, hash, u.name, u.crm]
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (email) DO UPDATE SET
+           password_hash = $2,
+           name = $3,
+           crm = $4,
+           can_access_records = $5,
+           can_edit_agenda = $6,
+           is_admin = $7`,
+        [u.email, hash, u.name, u.crm, u.can_access_records, u.can_edit_agenda, u.is_admin]
       );
     } else {
       const db = getSqliteDb();
       // Upsert: insert or update password
       db.run(
         `INSERT INTO doctor (email, password_hash, name, crm, can_access_records, can_edit_agenda, is_admin)
-         VALUES (?, ?, ?, ?, 1, 1, 1)
-         ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash`,
-        [u.email, hash, u.name, u.crm]
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(email) DO UPDATE SET
+           password_hash = excluded.password_hash,
+           name = excluded.name,
+           crm = excluded.crm,
+           can_access_records = excluded.can_access_records,
+           can_edit_agenda = excluded.can_edit_agenda,
+           is_admin = excluded.is_admin`,
+        [u.email, hash, u.name, u.crm, u.can_access_records ? 1 : 0, u.can_edit_agenda ? 1 : 0, u.is_admin ? 1 : 0]
       );
     }
     console.log(`  ✅ ${u.email} → senha: ${u.password}`);
