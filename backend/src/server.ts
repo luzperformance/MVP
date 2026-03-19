@@ -19,6 +19,7 @@ import { assetsRouter } from './routes/assets';
 import { gestaoRouter } from './routes/gestao';
 import { alertsRouter } from './routes/alerts';
 import { publicLeadsRouter } from './routes/publicLeads';
+import { biLayoutsRouter } from './routes/biLayouts';
 import { lgpdMiddleware } from './middleware/lgpd';
 import { logger } from './services/logger';
 
@@ -64,6 +65,7 @@ app.use('/api/patients', patientsRouter);
 app.use('/api/patients', recordsRouter);
 app.use('/api/patients', examsRouter);
 app.use('/api/patients', photosRouter);
+app.use('/api/patients', biLayoutsRouter);
 app.use('/api/ai', transcriptionRouter);
 app.use('/api/finance', financeRouter);
 app.use('/api/calendar', calendarRouter);
