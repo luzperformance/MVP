@@ -168,7 +168,9 @@ export default function AppLayout() {
           {doctor && (
             <div className="sidebar-footer-doctor">
               <div className="sidebar-footer-doctor-name">{doctor.name}</div>
-              <div className="sidebar-footer-doctor-crm" style={{ marginBottom: 6 }}>CRM {doctor.crm}</div>
+              <div className="sidebar-footer-doctor-crm" style={{ marginBottom: 6 }}>
+                {doctor.can_access_records ? `CRM ${doctor.crm}` : 'Secretária'}
+              </div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {doctor.can_access_records && (
                   <span style={{ fontSize: 9, padding: '2px 4px', background: 'rgba(52, 168, 83, 0.2)', color: '#34a853', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prontuário</span>
