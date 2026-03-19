@@ -1,25 +1,38 @@
 @echo off
-echo 🚀 Iniciando o Prontuario LuzPerformance com Docker e Persistencia...
+setlocal
+echo 🐘 Iniciando Ecossistema Prontuario LuzPerformance (Docker + Postgres)
 
-:: Verifica se o Docker esta rodando
+:: 1. Verificacao do Docker
 docker info >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ❌ Erro: O Docker nao esta rodando. Por favor, abra o Docker Desktop.
+    echo.
+    echo ❌ ERRO: O Docker Desktop nao esta rodando!
+    echo.
+    echo Por favor, abra o Docker Desktop antes de continuar.
+    echo.
     pause
     exit /b
 )
 
-:: Sobe os containers em modo destacada (background)
-:: Isso ja inclui o Postgres com persistencia, o Backend e o Frontend
-echo 📦 Subindo containers (Banco de Dados, API e Frontend)...
+:: 2. Limpeza de Logs e Subida
+echo 🚀 Subindo Containers e Camada de Persistencia...
 docker-compose up -d --build
 
+:: 3. Status Check
 echo.
-echo ✅ Tudo pronto!
-echo 🌐 Frontend: http://localhost:5173
+echo ⏳ Aguardando inicializacao dos servicos...
+timeout /t 5 /nobreak >nul
+
+echo.
+echo ✅ AMBIENTE PRONTO!
+echo ----------------------------------------
+echo 🌐 Frontend:    http://localhost:5173
 echo 🔌 API Backend: http://localhost:3001
-echo 🐘 Postgres: localhost:5432
+echo 🐘 Database:    PostgreSQL (Porta 5432)
+echo 💾 Persistencia: data/postgres e backend/uploads
+echo ----------------------------------------
 echo.
-echo Para ver os logs, use: docker-compose logs -f
-echo Para parar tudo, use: docker-compose down
+echo [Dica] Use 'docker-compose logs -f' para ver os logs em tempo real.
+echo [Dica] Use 'docker-compose down' para desligar tudo com seguranca.
+echo.
 pause

@@ -32,7 +32,7 @@ patientsRouter.get('/:id', (req: AuthRequest, res: Response) => {
 // POST /api/patients
 patientsRouter.post('/', (req: AuthRequest, res: Response) => {
   const { name, birth_date, cpf_encrypted, phone, email, gender, occupation,
-          main_complaint, notes, lgpd_consent_at } = req.body;
+          main_complaint, notes, lgpd_consent_at, mgmt_data } = req.body;
 
   if (!name || !birth_date) {
     return res.status(400).json({ error: 'Nome e data de nascimento são obrigatórios.' });
@@ -40,13 +40,25 @@ patientsRouter.post('/', (req: AuthRequest, res: Response) => {
 
   const id = uuidv4();
   const db = getDb();
+  
+  // Merge default mgmt_data with provided data
+  const finalMgmtData = {
+    status: 'ativo',
+    origin: null,
+    first_consultation: null,
+    last_consultation: null,
+    uses_ea: false,
+    wants_children: false,
+    ...(mgmt_data || {})
+  };
+
   db.prepare(`
     INSERT INTO patients (id, name, birth_date, cpf_encrypted, phone, email,
-      gender, occupation, main_complaint, notes, lgpd_consent_at, lgpd_consent_ip)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      gender, occupation, main_complaint, notes, lgpd_consent_at, lgpd_consent_ip, mgmt_data)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, name, birth_date, cpf_encrypted || null, phone || null, email || null,
          gender || null, occupation || null, main_complaint || null, notes || null,
-         lgpd_consent_at || null, req.ip);
+         lgpd_consent_at || null, req.ip, JSON.stringify(finalMgmtData));
 
   const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(id);
   return res.status(201).json(patient);

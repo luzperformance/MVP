@@ -35,6 +35,7 @@ export interface Record {
   soap_assessment?: string;
   soap_plan?: string;
   notes?: string;
+  content: string;
   consultation_date: string;
   duration_minutes?: number;
   created_at: string;
@@ -261,6 +262,26 @@ export interface PatientManagement {
   mgmt_status?: MgmtStatus;
   uses_ea?: boolean;
   wants_children?: boolean;
+  
+  // New Medical / Admin Fields
+  mother_name?: string;
+  children_info?: string;
+  weight_height?: string;
+  future_children?: string;
+  cpf?: string;
+  cep_address?: string;
+  civil_status?: string;
+  health_plan?: string;
+  other_professionals?: string;
+  hometown_current?: string;
+  profession?: string;
+  medical_history?: string; // Problems, meds, capsules
+  hormone_use?: string;
+  male_specific?: {
+    libido_erection?: string;
+    children_details?: string; // Number of children and if wants in 6 months
+  };
+
   observations?: string;
   notes?: string;
   origin?: string;

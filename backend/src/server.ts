@@ -4,7 +4,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
-import { initDatabase } from './db/database';
+import bcrypt from 'bcryptjs';
+import { initDatabase, getSqliteDb, saveSqlite, pool } from './db/database';
 import { authRouter } from './routes/auth';
 import { patientsRouter } from './routes/patients';
 import { recordsRouter } from './routes/records';
@@ -25,6 +26,7 @@ import { logger } from './services/logger';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const USE_PG = process.env.USE_PG === 'true';
 
 // === SECURITY ===
 app.use(helmet());
@@ -43,7 +45,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
+  windowMs: 15 * 60 * 1000,
   max: 200,
   message: { error: 'Muitas requisições. Tente novamente em breve.' },
 }));
@@ -59,8 +61,10 @@ app.use('/uploads', express.static(uploadPath));
 // === LGPD AUDIT LOG (before routes) ===
 app.use(lgpdMiddleware);
 
-// === ROUTES ===
+// === AUTH ROUTES ===
 app.use('/api/auth', authRouter);
+
+// === ROUTES ===
 app.use('/api/patients', patientsRouter);
 app.use('/api/patients', recordsRouter);
 app.use('/api/patients', examsRouter);
@@ -78,7 +82,7 @@ app.use('/api/public', publicLeadsRouter);
 
 // === HEALTH CHECK ===
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', version: '1.0.0', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', version: '1.0.0', mode: USE_PG ? 'postgresql' : 'sqlite', timestamp: new Date().toISOString() });
 });
 
 // === ERROR HANDLER ===
@@ -87,27 +91,47 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ error: 'Erro interno do servidor.' });
 });
 
-import { getDb } from './db/database';
-import bcrypt from 'bcryptjs';
+// === SEED DEFAULT USERS ===
+async function seedDefaultUsers() {
+  const users = [
+    { email: 'drluzardi93@gmail.com', password: 'teste1', name: 'Dr. Vinícius Luzardi', crm: 'SC-33489' },
+    { email: 'luzardi18@gmail.com', password: '1234', name: 'Dr. Luzardi', crm: 'SC-33489' },
+  ];
+
+  for (const u of users) {
+    const hash = await bcrypt.hash(u.password, 12);
+
+    if (USE_PG) {
+      await pool.query(
+        `INSERT INTO doctor (email, password_hash, name, crm, can_access_records, can_edit_agenda, is_admin)
+         VALUES ($1, $2, $3, $4, TRUE, TRUE, TRUE)
+         ON CONFLICT (email) DO UPDATE SET password_hash = $2`,
+        [u.email, hash, u.name, u.crm]
+      );
+    } else {
+      const db = getSqliteDb();
+      // Upsert: insert or update password
+      db.run(
+        `INSERT INTO doctor (email, password_hash, name, crm, can_access_records, can_edit_agenda, is_admin)
+         VALUES (?, ?, ?, ?, 1, 1, 1)
+         ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash`,
+        [u.email, hash, u.name, u.crm]
+      );
+    }
+    console.log(`  ✅ ${u.email} → senha: ${u.password}`);
+  }
+
+  if (!USE_PG) saveSqlite();
+}
 
 // === START ===
 async function start() {
   await initDatabase();
-  
-  // Guarantee permissions for luzardi18@gmail.com
-  try {
-    getDb().prepare(`UPDATE doctor SET can_access_records = 1, can_edit_agenda = 1 WHERE email LIKE '%luzardi18%' OR id = 1;`).run();
-    
-    // Auto-Reset password temporary fix
-    const hash = await bcrypt.hash("1234", 12);
-    getDb().prepare(`UPDATE doctor SET password_hash = ? WHERE email LIKE '%luzardi18%';`).run(hash);
-    console.log('--- PASSWORD FOR LUZARDI18 RESET TO 1234 ---');
-  } catch (e) {
-    // Migration might not have run yet if not restarted clearly
-  }
+  await seedDefaultUsers();
 
   app.listen(PORT, () => {
-    logger.info(`🏥 Prontuário API rodando na porta ${PORT}`);
+    logger.info(`🏥 Prontuário API rodando na porta ${PORT} (${USE_PG ? 'PostgreSQL' : 'SQLite'})`);
+    console.log(`\n🔗 http://localhost:${PORT}/api/health\n`);
   });
 }
 

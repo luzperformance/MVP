@@ -22,7 +22,9 @@
     "multer": "2.1.1",
     "sql.js": "^1.10.3",
     "uuid": "^9.0.1",
-    "winston": "^3.13.0"
+    "winston": "^3.13.0",
+    "better-auth": "^1.1.21",
+    "pg": "^8.11.5"
   },
   "overrides": {
     "multer": "2.1.1"
@@ -36,6 +38,7 @@
     "@types/node": "^20.12.5",
     "@types/sql.js": "^1.4.10",
     "@types/uuid": "^9.0.8",
+    "@types/pg": "^8.11.5",
     "tsx": "^4.7.2",
     "typescript": "^5.4.4",
     "vitest": "^1.5.0"

@@ -17,47 +17,78 @@ export default function DashboardPage() {
   const doctor = useAuthStore(s => s.doctor);
 
   return (
-    <div>
-      <div className="page-header">
-        <TrendingUp size={20} color="var(--luz-gold)" aria-hidden />
+    <div className="animate-fade-in">
+      <div className="page-header glass-surface" style={{ borderBottom: '1px solid rgba(201, 164, 74, 0.2)' }}>
+        <TrendingUp size={20} color="var(--luz-gold)" className="animate-pulse-glow" aria-hidden />
         <div>
-          <div className="font-display" style={{ fontWeight: 700, color: 'var(--luz-white)', fontSize: 16, letterSpacing: '0.02em' }}>
-            Dashboard
+          <div className="font-display text-gold-gradient" style={{ fontWeight: 700, fontSize: 18, letterSpacing: '0.04em' }}>
+            LuzPerformance Dashboard
           </div>
-          <div style={{ fontSize: 12, color: 'var(--luz-gray-dark)' }}>
-            Bem-vindo, {doctor?.name ?? 'Doutor'}
+          <div style={{ fontSize: 12, color: 'var(--luz-gray-dark)', fontWeight: 500 }}>
+            Painel de Controle | Bem-vindo, {doctor?.name ?? 'Doutor'}
           </div>
         </div>
       </div>
 
-      <div className="page-content">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
-          {actions.map(({ to, icon: Icon, label, desc }) => (
+      <div className="page-content grid-pattern">
+        {/* Quick Access Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }} className="stagger">
+          {actions.map(({ to, icon: Icon, label, desc }, idx) => (
             <Link
               key={to}
               to={to}
-              className="card animate-fade-in-up"
-              style={{ textDecoration: 'none', display: 'block', transition: 'border-color 0.2s ease', padding: '16px 14px' }}
+              className={`card glass-card animate-fade-in-up stagger-${idx + 1}`}
+              style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '24px 16px' }}
               aria-label={label}
             >
-              <Icon size={22} color="var(--luz-gold)" style={{ marginBottom: 10 }} aria-hidden />
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--luz-white)', marginBottom: 3 }}>{label}</div>
-              <div style={{ fontSize: 11, color: 'var(--luz-gray-dark)' }}>{desc}</div>
+              <div style={{ 
+                background: 'rgba(201, 164, 74, 0.1)', 
+                padding: 12, 
+                borderRadius: '12px', 
+                marginBottom: 16,
+                border: '1px solid rgba(201, 164, 74, 0.2)'
+              }}>
+                <Icon size={24} color="var(--luz-gold)" aria-hidden />
+              </div>
+              <div className="font-display" style={{ fontSize: 13, fontWeight: 700, color: 'var(--luz-gold)', marginBottom: 6, textTransform: 'uppercase' }}>{label}</div>
+              <div style={{ fontSize: 11, color: 'var(--luz-gray-dark)', lineHeight: 1.4 }}>{desc}</div>
             </Link>
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }} className="animate-fade-in-up">
           <AlertsWidget />
-          <div className="card card-gold animate-fade-in-up">
-          <h3 className="exam-section-title" style={{ marginBottom: 12 }}>Como usar</h3>
-          <ul style={{ color: 'var(--luz-gray)', fontSize: 13, lineHeight: 2, listStyle: 'none', padding: 0 }}>
-            <li><strong style={{ color: 'var(--luz-white)' }}>Pacientes</strong> &mdash; Cadastrar e buscar pacientes</li>
-            <li><strong style={{ color: 'var(--luz-white)' }}>Consultas</strong> &mdash; Veja os compromissos do dia via Google Calendar</li>
-            <li><strong style={{ color: 'var(--luz-white)' }}>Exames</strong> &mdash; Upload de PDF e entrada de valores com dashboard</li>
-            <li><strong style={{ color: 'var(--luz-white)' }}>Fotos</strong> &mdash; Registre a evolucao visual do paciente</li>
-            <li><strong style={{ color: 'var(--luz-white)' }}>Financeiro</strong> &mdash; Importe CSV ou lance receitas/despesas</li>
-          </ul>
+          
+          <div className="card glass-card shadow-gold">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <Target size={20} color="var(--luz-gold)" />
+              <h3 className="font-display" style={{ fontSize: 14, color: 'var(--luz-white)', margin: 0 }}>Guia de Performance</h3>
+            </div>
+            
+            <div style={{ position: 'relative' }}>
+              <ul style={{ color: 'var(--luz-gray)', fontSize: 13, lineHeight: 2.2, listStyle: 'none', padding: 0 }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--luz-gold)' }} />
+                  <span><strong style={{ color: 'var(--luz-white)' }}>Pacientes</strong> &mdash; Gestão centralizada e busca rápida</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--luz-gold)' }} />
+                  <span><strong style={{ color: 'var(--luz-white)' }}>Consultas</strong> &mdash; Sincronização via Google Calendar</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--luz-gold)' }} />
+                  <span><strong style={{ color: 'var(--luz-white)' }}>Bioconv</strong> &mdash; Análise de markers com IA integrada</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--luz-gold)' }} />
+                  <span><strong style={{ color: 'var(--luz-white)' }}>Antes & Depois</strong> &mdash; Registro visual de evolução</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--luz-gold)' }} />
+                  <span><strong style={{ color: 'var(--luz-white)' }}>Financeiro</strong> &mdash; BI de faturamento e despesas</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
