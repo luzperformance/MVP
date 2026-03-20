@@ -14,9 +14,103 @@ const DB_DIR = path.resolve(process.env.DB_PATH ? path.dirname(process.env.DB_PA
 const DB_FILE = path.resolve(process.env.DB_PATH || './data/prontuario.db');
 
 // ─── SQLite (default for local dev) ───
-let sqliteDb: Database | null = null;
+let sqliteDb: any = null;
 
-export function getSqliteDb(): Database {
+// Wrapper for sql.js Statement to mimic better-sqlite3
+class StatementWrapper {
+  private stmt: any;
+  constructor(stmt: any) { this.stmt = stmt; }
+
+  bind(params: any[]) {
+    this.stmt.bind(params.length === 1 && Array.isArray(params[0]) ? params[0] : params);
+    return this;
+  }
+
+  step() {
+    return this.stmt.step();
+  }
+
+  getColumnNames() {
+    return this.stmt.getColumnNames();
+  }
+
+  // Raw get from sql.js (returns array)
+  getRaw() {
+    return this.stmt.get();
+  }
+
+  // better-sqlite3 style all() (returns array of objects)
+  all(...params: any[]) {
+    try {
+      this.stmt.bind(params.length === 1 && Array.isArray(params[0]) ? params[0] : params);
+      const results = [];
+      while (this.stmt.step()) {
+        results.push(this.stmt.getAsObject());
+      }
+      return results;
+    } finally {
+      this.stmt.reset();
+    }
+  }
+
+  // better-sqlite3 style get() (returns one object)
+  get(...params: any[]) {
+    try {
+      this.stmt.bind(params.length === 1 && Array.isArray(params[0]) ? params[0] : params);
+      let result = null;
+      if (this.stmt.step()) {
+        result = this.stmt.getAsObject();
+      }
+      return result;
+    } finally {
+      this.stmt.reset();
+    }
+  }
+
+  run(...params: any[]) {
+    try {
+      this.stmt.bind(params.length === 1 && Array.isArray(params[0]) ? params[0] : params);
+      this.stmt.step();
+      return { changes: 1 }; 
+    } finally {
+      this.stmt.reset();
+    }
+  }
+
+  free() {
+    this.stmt.free();
+  }
+
+  reset() {
+    this.stmt.reset();
+  }
+}
+
+// Wrapper for sql.js Database to mimic better-sqlite3
+class DatabaseWrapper {
+  private db: Database;
+  constructor(db: Database) { this.db = db; }
+
+  prepare(sql: string) {
+    const stmt = this.db.prepare(sql);
+    return new StatementWrapper(stmt);
+  }
+
+  run(sql: string, ...params: any[]) {
+    this.db.run(sql, params.length === 1 && Array.isArray(params[0]) ? params[0] : params);
+    return { changes: 1 };
+  }
+
+  exec(sql: string) {
+    this.db.exec(sql);
+  }
+
+  export() {
+    return this.db.export();
+  }
+}
+
+export function getSqliteDb(): any {
   if (!sqliteDb) throw new Error('SQLite not initialized. Call initDatabase() first.');
   return sqliteDb;
 }
@@ -292,14 +386,22 @@ export async function initDatabase() {
 
     if (fs.existsSync(DB_FILE)) {
       const fileBuffer = fs.readFileSync(DB_FILE);
-      sqliteDb = new SQL.Database(fileBuffer);
+      sqliteDb = new DatabaseWrapper(new SQL.Database(fileBuffer));
       console.log('📦 SQLite loaded from', DB_FILE);
     } else {
-      sqliteDb = new SQL.Database();
+      sqliteDb = new DatabaseWrapper(new SQL.Database());
       console.log('📦 SQLite created (new database)');
     }
 
     sqliteDb.run(SQLITE_SCHEMA);
+
+    // Dynamic Migrations (Handle missing columns)
+    try {
+      // Add is_admin to doctor if missing
+      sqliteDb.run("ALTER TABLE doctor ADD COLUMN is_admin INTEGER DEFAULT 0");
+      console.log('✨ Migrated: doctor.is_admin added');
+    } catch (e) { /* already exists */ }
+
     saveSqliteSync();
     console.log('✅ SQLite initialized (Zero-Config MVP Mode)');
   }

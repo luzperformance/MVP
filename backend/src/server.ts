@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { initDatabase, getSqliteDb, saveSqlite, pool } from './db/database';
 import { authRouter } from './routes/auth';
@@ -34,6 +35,12 @@ app.use(cors({
   origin: (origin, callback) => {
     const allowed = [
       'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175',
+      'http://localhost:5176',
+      'http://localhost:5177',
+      'http://localhost:5178',
+      'http://localhost:5179',
       'https://prontuario.luzperformance.com.br',
       'https://www.luzperformance.com',
       'https://luzperformance.com',
@@ -79,6 +86,26 @@ app.use('/api/assets', assetsRouter);
 app.use('/api/gestao', gestaoRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/public', publicLeadsRouter);
+
+// === SERVE FRONTEND (Production) ===
+if (process.env.NODE_ENV === 'production' || process.env.SERVE_FRONTEND === 'true') {
+  const frontendPath = path.resolve(__dirname, '../../frontend/dist');
+  
+  if (fs.existsSync(frontendPath)) {
+    app.use(express.static(frontendPath));
+    app.get('*', (req, res) => {
+      // Don't intercept /api routes
+      if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'API route not found' });
+      }
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+    console.log('🚀 Serving frontend from:', frontendPath);
+  } else {
+    console.warn('⚠️ Frontend dist folder not found at:', frontendPath);
+  }
+}
+
 
 // === HEALTH CHECK ===
 app.get('/api/health', (_req, res) => {
