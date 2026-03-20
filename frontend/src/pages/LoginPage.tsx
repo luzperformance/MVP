@@ -40,22 +40,28 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
+      <div className="mesh-background" />
+      
       <div className="login-page-inner">
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <Activity size={40} color="var(--luz-gold)" style={{ marginBottom: 16 }} aria-hidden />
-          <h1 className="font-display" style={{ fontSize: 20, color: 'var(--luz-gold)' }}>PRONTUÁRIO</h1>
-          <p style={{ fontSize: 13, color: 'var(--luz-gray-dark)', marginTop: 8 }}>LuzPerformance — Acesso Restrito</p>
+        <div style={{ textAlign: 'center', marginBottom: 40 }} className="animate-fade-in">
+          <Activity size={60} color="var(--luz-gold)" className="floating-icon" style={{ marginBottom: 20 }} aria-hidden />
+          <h1 className="font-display text-gold-gradient" style={{ fontSize: 28, letterSpacing: '0.2em' }}>
+            PRONTUÁRIO
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--luz-gray-dark)', marginTop: 12, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            LuzPerformance — Gestão Inteligente
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="card animate-fade-in-up" noValidate>
-          <div style={{ marginBottom: 18 }}>
-            <label htmlFor="login-email" className="form-label">E-mail</label>
+        <form onSubmit={handleLogin} className="glass-login-card animate-fade-in-up" noValidate>
+          <div className="premium-input-group">
+            <label htmlFor="login-email">E-mail Corporativo</label>
             <input
               id="login-email"
               name="email"
               type="email"
-              className="form-input"
-              placeholder="dr@luzperformance.com.br"
+              className="premium-input"
+              placeholder="viana@luzperformance.com.br"
               value={formData.email}
               onChange={handleInputChange}
               required
@@ -63,14 +69,14 @@ export default function LoginPage() {
             />
           </div>
 
-          <div style={{ marginBottom: 18 }}>
-            <label htmlFor="login-password" className="form-label">Senha</label>
+          <div className="premium-input-group">
+            <label htmlFor="login-password">Senha de Acesso</label>
             <input
               id="login-password"
               name="password"
               type="password"
-              className="form-input"
-              placeholder="••••••"
+              className="premium-input"
+              placeholder="••••••••"
               value={formData.password}
               onChange={handleInputChange}
               required
@@ -79,22 +85,26 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="alert alert-error" role="alert" style={{ marginBottom: 16 }}>
-              {error}
+            <div className="alert alert-error animate-fade-in" role="alert" style={{ marginBottom: 24, borderRadius: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertCircle size={16} />
+                <span>{error}</span>
+              </div>
             </div>
           )}
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-            {loading ? 'Entrando...' : 'Entrar'}
+          <button type="submit" className="luz-gold-btn" disabled={loading}>
+            {loading ? 'Validando...' : 'Entrar no Sistema'}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
           <Link to="/setup" className="login-setup-link">
-            Primeiro acesso? Configurar conta
+            Não possui conta? Solicitar acesso ao administrador
           </Link>
         </div>
       </div>
     </div>
   );
 }
+
