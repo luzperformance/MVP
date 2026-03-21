@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense, useTransition, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, Plus, Search, ChevronRight, X, Calendar, Upload, LayoutGrid, List, FileText, TrendingUp, AlertTriangle, Zap, BarChart3, AlertCircle } from 'lucide-react';
+import { UserPlus, Plus, Search, ChevronRight, X, Calendar, Upload, LayoutGrid, List, FileText, TrendingUp, AlertTriangle, Zap, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import type { Lead, LeadSource, LeadStatus, LeadTemperature, CrmSummary } from '@shared/types';
+import type { Lead, LeadSource, LeadStatus, LeadTemperature, CrmSummary, AdCampaign } from '@shared/types';
+import CampaignsPanel from '../components/crm/CampaignsPanel';
+
+const LeadsKanbanBoardLazy = lazy(() => import('../components/crm/LeadsKanbanBoard'));
 
 const STATUS_LABELS: Record<LeadStatus, string> = {
   novo: 'Novo', contato: 'Contato', qualificado: 'Qualificado',
@@ -21,8 +24,6 @@ const TEMP_LABELS: Record<LeadTemperature, string> = {
 const ALL_STATUSES: LeadStatus[] = ['novo', 'contato', 'qualificado', 'proposta', 'convertido', 'perdido'];
 const ALL_SOURCES: LeadSource[] = ['indicacao', 'instagram', 'google', 'site', 'evento', 'outro'];
 const ALL_TEMPS: LeadTemperature[] = ['frio', 'morno', 'quente'];
-const KANBAN_COLS: LeadStatus[] = ['novo', 'contato', 'qualificado', 'proposta', 'convertido', 'perdido'];
-
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 type ViewMode = 'list' | 'kanban';
@@ -44,6 +45,8 @@ export default function LeadsPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [campaigns, setCampaigns] = useState<AdCampaign[]>([]);
+  const [isViewPending, startViewTransition] = useTransition();
 
   const fetchLeads = useCallback(async (q?: string) => {
     abortRef.current?.abort();
@@ -61,11 +64,17 @@ export default function LeadsPage() {
       const hdrs = { Authorization: `Bearer ${token}` };
       const sig = controller.signal;
 
-      const [resLeads, resSummary, resAnalytics, resHygiene] = await Promise.all([
+      const fetchCampaigns =
+        viewMode === 'kanban'
+          ? fetch('/api/campaigns', { headers: hdrs, signal: sig })
+          : Promise.resolve(null as Response | null);
+
+      const [resLeads, resSummary, resAnalytics, resHygiene, resCampaigns] = await Promise.all([
         fetch(`/api/leads${qs}`, { headers: hdrs, signal: sig }),
         fetch('/api/leads/summary', { headers: hdrs, signal: sig }),
         fetch('/api/leads/analytics', { headers: hdrs, signal: sig }),
         fetch('/api/leads/hygiene', { headers: hdrs, signal: sig }),
+        fetchCampaigns,
       ]);
 
       if (resLeads.status === 401 || resSummary.status === 401) { logout(); navigate('/login'); return; }
@@ -76,6 +85,12 @@ export default function LeadsPage() {
       if (resSummary.ok) setSummary(await resSummary.json());
       if (resAnalytics.ok) setAnalytics(await resAnalytics.json());
       if (resHygiene.ok) setHygiene(await resHygiene.json());
+      if (resCampaigns?.ok) {
+        const campData = await resCampaigns.json();
+        setCampaigns(Array.isArray(campData) ? campData : []);
+      } else if (viewMode !== 'kanban') {
+        setCampaigns([]);
+      }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
       setError('Erro de conexão com o servidor.');
@@ -124,7 +139,7 @@ export default function LeadsPage() {
             <button
               type="button"
               className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setViewMode('list')}
+              onClick={() => startViewTransition(() => setViewMode('list'))}
               aria-label="Visualização em lista"
               style={{ borderRadius: 0, border: 'none' }}
             >
@@ -133,7 +148,7 @@ export default function LeadsPage() {
             <button
               type="button"
               className={`btn btn-sm ${viewMode === 'kanban' ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => setViewMode('kanban')}
+              onClick={() => startViewTransition(() => setViewMode('kanban'))}
               aria-label="Visualização Kanban"
               style={{ borderRadius: 0, border: 'none' }}
             >
@@ -167,7 +182,7 @@ export default function LeadsPage() {
             <p style={{ color: 'var(--luz-gray-dark)' }}>{error}</p>
             <button type="button" className="btn btn-ghost" onClick={() => fetchLeads()} style={{ marginTop: 12 }}>Tentar novamente</button>
           </div>
-        ) : leads.length === 0 ? (
+        ) : leads.length === 0 && viewMode === 'list' ? (
           <div className="card animate-fade-in-up agenda-empty-state">
             <UserPlus size={48} color="var(--luz-gold)" aria-hidden />
             <h3 className="exam-section-title">Nenhum lead cadastrado</h3>
@@ -178,7 +193,31 @@ export default function LeadsPage() {
             </div>
           </div>
         ) : viewMode === 'kanban' ? (
-          <KanbanBoard leads={leads} />
+          <div style={{ opacity: isViewPending ? 0.65 : 1, transition: 'opacity 0.15s ease' }}>
+            <CampaignsPanel token={token} campaigns={campaigns} onRefresh={() => fetchLeads(search)} />
+            {leads.length === 0 ? (
+              <div className="card animate-fade-in-up agenda-empty-state" style={{ marginBottom: 16 }}>
+                <LayoutGrid size={40} color="var(--luz-gold)" aria-hidden />
+                <h3 className="exam-section-title">Funil vazio</h3>
+                <p style={{ color: 'var(--luz-gray-dark)' }}>Adicione leads para vê-los nas colunas do Kanban. As campanhas acima podem ser usadas para organizar o investimento em anúncios.</p>
+                <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                  <button type="button" className="btn btn-primary" onClick={() => setShowNewModal(true)}><Plus size={16} aria-hidden /> Criar lead</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setShowImportModal(true)}><Upload size={16} aria-hidden /> Importar</button>
+                </div>
+              </div>
+            ) : (
+              <Suspense
+                fallback={
+                  <div className="agenda-loading">
+                    <div className="agenda-loading-spinner" aria-hidden />
+                    <p>Carregando Kanban...</p>
+                  </div>
+                }
+              >
+                <LeadsKanbanBoardLazy leads={leads} />
+              </Suspense>
+            )}
+          </div>
         ) : (
           <LeadList leads={leads} />
         )}
@@ -312,119 +351,96 @@ function KpiCards({ summary, analytics, hygiene }: { summary: CrmSummary; analyt
   );
 }
 
-// ── Kanban Board ──
-function KanbanBoard({ leads }: { leads: Lead[] }) {
+// ── Lead List (lista memoizada por linha) ──
+const LeadListRow = memo(function LeadListRow({ lead }: { lead: Lead }) {
   const now = Date.now();
-  const grouped = KANBAN_COLS.reduce((acc, status) => {
-    acc[status] = leads.filter(l => l.status === status);
-    return acc;
-  }, {} as Record<LeadStatus, Lead[]>);
+  const isOverdue = lead.next_followup_at ? new Date(lead.next_followup_at).getTime() < now : false;
 
   return (
-    <div className="crm-kanban-container">
-      {KANBAN_COLS.map(status => {
-        const colLeads = grouped[status];
-        const colValue = colLeads.reduce((sum, l) => sum + (l.expected_value || 0), 0);
-
-        return (
-          <div key={status} className="crm-kanban-column">
-            <div className="crm-kanban-header">
-              <span className={`badge badge-${status}`}>{STATUS_LABELS[status]}</span>
-              <span style={{ fontSize: 12, color: 'var(--luz-gray-dark)', marginLeft: 6 }}>{colLeads.length}</span>
-              {colValue > 0 ? (
-                <span style={{ fontSize: 10, color: 'var(--luz-gold)', marginLeft: 'auto', fontWeight: 600 }}>{BRL.format(colValue)}</span>
-              ) : null}
-            </div>
-            <div className="crm-kanban-cards">
-              {colLeads.map(lead => {
-                const isOverdue = lead.next_followup_at ? new Date(lead.next_followup_at).getTime() < now : false;
-
-                return (
-                  <Link key={lead.id} to={`/crm/leads/${lead.id}`} className="crm-kanban-card card" aria-label={`Ver ${lead.name}`} style={{ borderLeft: isOverdue ? '3px solid #f87171' : undefined }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--luz-white)', fontSize: 13 }}>{lead.name}</div>
-                      {lead.score != null && lead.score > 0 ? (
-                        <span style={{
-                          fontSize: 9, fontWeight: 700, borderRadius: 8, padding: '1px 5px',
-                          background: lead.score >= 75 ? '#4ade80' : lead.score >= 50 ? '#fbbf24' : '#94a3b8',
-                          color: '#0a0a0f',
-                        }} title={`Score: ${lead.score}`}>{lead.score}</span>
-                      ) : null}
-                    </div>
-                    {lead.company ? <div style={{ fontSize: 11, color: 'var(--luz-gray-dark)' }}>{lead.company}</div> : null}
-                    <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                      {lead.temperature ? <span className={`badge badge-${lead.temperature}`} style={{ fontSize: 9, padding: '2px 6px' }}>{TEMP_LABELS[lead.temperature]}</span> : null}
-                      {lead.expected_value != null && lead.expected_value > 0 ? (
-                        <span style={{ fontSize: 11, color: 'var(--luz-gold)', fontWeight: 600 }}>{BRL.format(lead.expected_value)}</span>
-                      ) : null}
-                    </div>
-                    {lead.next_followup_at ? (
-                      <div style={{ fontSize: 10, color: isOverdue ? '#f87171' : 'var(--luz-gray-dark)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
-                        {isOverdue ? <AlertCircle size={10} aria-hidden /> : <Calendar size={10} aria-hidden />}
-                        {new Date(lead.next_followup_at).toLocaleDateString('pt-BR')}
-                        {isOverdue ? ' (atrasado)' : ''}
-                      </div>
-                    ) : null}
-                  </Link>
-                );
-              })}
-              {colLeads.length === 0 ? <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--luz-gray-dark)' }}>Vazio</div> : null}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <Link
+      to={`/crm/leads/${lead.id}`}
+      className="card animate-fade-in-up"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        textDecoration: 'none',
+        borderLeft: isOverdue ? '3px solid #f87171' : undefined,
+      }}
+      aria-label={`Ver lead ${lead.name}`}
+    >
+      <div
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          background: 'rgba(201,164,74,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          fontFamily: 'Orbitron',
+          fontWeight: 700,
+          position: 'relative',
+        }}
+        className="font-display"
+        aria-hidden
+      >
+        {lead.name.charAt(0).toUpperCase()}
+        {lead.score != null && lead.score > 0 ? (
+          <span
+            style={{
+              position: 'absolute',
+              bottom: -4,
+              right: -4,
+              fontSize: 9,
+              fontWeight: 700,
+              background: lead.score >= 75 ? '#4ade80' : lead.score >= 50 ? '#fbbf24' : '#94a3b8',
+              color: '#0a0a0f',
+              borderRadius: 8,
+              padding: '1px 5px',
+              fontFamily: 'sans-serif',
+            }}
+            title={`Score: ${lead.score}`}
+          >
+            {lead.score}
+          </span>
+        ) : null}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 2 }}>
+          <span style={{ fontWeight: 600, color: 'var(--luz-white)' }}>{lead.name}</span>
+          <span className={`badge badge-${lead.status}`}>{STATUS_LABELS[lead.status]}</span>
+          {lead.temperature ? <span className={`badge badge-${lead.temperature}`}>{TEMP_LABELS[lead.temperature]}</span> : null}
+          {isOverdue ? (
+            <span style={{ fontSize: 10, color: '#f87171', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <AlertCircle size={10} aria-hidden /> Atrasado
+            </span>
+          ) : null}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--luz-gray-dark)' }}>
+          {lead.company ? <>{lead.company} &middot; </> : null}
+          {lead.source ? <>{SOURCE_LABELS[lead.source]} &middot; </> : null}
+          {lead.expected_value ? BRL.format(lead.expected_value) : ''}
+          {lead.next_followup_at ? (
+            <span style={{ marginLeft: 6, color: isOverdue ? '#f87171' : undefined }}>
+              <Calendar size={11} style={{ verticalAlign: 'middle', marginRight: 2 }} aria-hidden />
+              {new Date(lead.next_followup_at).toLocaleDateString('pt-BR')}
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <ChevronRight size={16} color="var(--luz-gray-dark)" aria-hidden />
+    </Link>
   );
-}
+});
 
-// ── Lead List (original view) ──
 function LeadList({ leads }: { leads: Lead[] }) {
-  const now = Date.now();
-
   return (
     <div className="stagger" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {leads.map(lead => {
-        const isOverdue = lead.next_followup_at ? new Date(lead.next_followup_at).getTime() < now : false;
-
-        return (
-          <Link key={lead.id} to={`/crm/leads/${lead.id}`} className="card animate-fade-in-up" style={{ display: 'flex', alignItems: 'center', gap: 16, textDecoration: 'none', borderLeft: isOverdue ? '3px solid #f87171' : undefined }} aria-label={`Ver lead ${lead.name}`}>
-            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(201,164,74,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontFamily: 'Orbitron', fontWeight: 700, position: 'relative' }} className="font-display" aria-hidden>
-              {lead.name.charAt(0).toUpperCase()}
-              {lead.score != null && lead.score > 0 ? (
-                <span style={{
-                  position: 'absolute', bottom: -4, right: -4, fontSize: 9, fontWeight: 700,
-                  background: lead.score >= 75 ? '#4ade80' : lead.score >= 50 ? '#fbbf24' : '#94a3b8',
-                  color: '#0a0a0f', borderRadius: 8, padding: '1px 5px', fontFamily: 'sans-serif',
-                }} title={`Score: ${lead.score}`}>{lead.score}</span>
-              ) : null}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 2 }}>
-                <span style={{ fontWeight: 600, color: 'var(--luz-white)' }}>{lead.name}</span>
-                <span className={`badge badge-${lead.status}`}>{STATUS_LABELS[lead.status]}</span>
-                {lead.temperature ? <span className={`badge badge-${lead.temperature}`}>{TEMP_LABELS[lead.temperature]}</span> : null}
-                {isOverdue ? (
-                  <span style={{ fontSize: 10, color: '#f87171', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                    <AlertCircle size={10} aria-hidden /> Atrasado
-                  </span>
-                ) : null}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--luz-gray-dark)' }}>
-                {lead.company ? <>{lead.company} &middot; </> : null}
-                {lead.source ? <>{SOURCE_LABELS[lead.source]} &middot; </> : null}
-                {lead.expected_value ? BRL.format(lead.expected_value) : ''}
-                {lead.next_followup_at ? (
-                  <span style={{ marginLeft: 6, color: isOverdue ? '#f87171' : undefined }}>
-                    <Calendar size={11} style={{ verticalAlign: 'middle', marginRight: 2 }} aria-hidden />
-                    {new Date(lead.next_followup_at).toLocaleDateString('pt-BR')}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-            <ChevronRight size={16} color="var(--luz-gray-dark)" aria-hidden />
-          </Link>
-        );
-      })}
+      {leads.map(lead => (
+        <LeadListRow key={lead.id} lead={lead} />
+      ))}
     </div>
   );
 }

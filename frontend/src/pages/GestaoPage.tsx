@@ -185,10 +185,10 @@ export default function GestaoPage() {
         <ClipboardList size={20} color="var(--luz-gold)" aria-hidden />
         <div style={{ flex: 1 }}>
           <div className="font-display" style={{ fontWeight: 700, color: 'var(--luz-white)', fontSize: 16, letterSpacing: '0.02em' }}>
-            Gestão de Pacientes
+            Seguimento
           </div>
           <div style={{ fontSize: 11, color: 'var(--luz-gray-dark)' }}>
-            Tabela completa para secretária
+            Tabela da secretária — pacientes e contrato
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -435,7 +435,7 @@ function SummaryCards({ summary }: { summary: GestaoSummary }) {
         <div className="card" style={{ textAlign: 'center', padding: '12px 8px' }}>
           <Users size={16} color="var(--luz-gold)" style={{ marginBottom: 4 }} aria-hidden />
           <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--luz-gold)' }}>{summary.ativos}</div>
-          <div style={{ fontSize: 10, color: 'var(--luz-gray-dark)' }}>Ativos</div>
+          <div style={{ fontSize: 10, color: 'var(--luz-gray-dark)' }}>Pacientes ativos</div>
         </div>
         <div className="card" style={{ textAlign: 'center', padding: '12px 8px' }}>
           <DollarSign size={16} color="#4ade80" style={{ marginBottom: 4 }} aria-hidden />

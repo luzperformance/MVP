@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import {
   LayoutDashboard, Users, LogOut, Activity, Menu, X, DollarSign, Calendar, Stethoscope, PanelLeftClose, PanelLeft,
-  UserPlus, Package, ClipboardList,
+  UserPlus, ClipboardList,
 } from 'lucide-react';
 
 const SIDEBAR_COLLAPSED_KEY = 'prontuario-sidebar-collapsed';
@@ -17,9 +17,8 @@ const NAV_PAGES = {
 };
 
 const crmItems = [
-  { to: '/gestao', icon: ClipboardList, label: 'Gestão' },
+  { to: '/crm/seguimento', icon: ClipboardList, label: 'Seguimento' },
   { to: '/crm/leads', icon: UserPlus, label: 'Leads' },
-  { to: '/crm/assets', icon: Package, label: 'Ativos' },
 ];
 
 export default function AppLayout() {

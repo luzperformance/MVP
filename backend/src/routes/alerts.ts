@@ -105,7 +105,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
       entity_type: 'patient',
       entity_id: p.id,
       entity_name: p.name,
-      action_url: `/gestao`,
+      action_url: `/crm/seguimento`,
       created_at: now.toISOString(),
       data: { days_left: daysLeft, contract_end: p.contract_end, monthly_value: p.monthly_value },
     });
@@ -200,7 +200,7 @@ alertsRouter.get('/', (_req: AuthRequest, res: Response) => {
       entity_type: 'patient',
       entity_id: p.id,
       entity_name: p.name,
-      action_url: `/gestao`,
+      action_url: `/crm/seguimento`,
       created_at: now.toISOString(),
       data: { days_overdue: days, monthly_value: p.monthly_value },
     });

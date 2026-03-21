@@ -18,6 +18,7 @@ import { consultasRouter } from './routes/consultas';
 import { leadsRouter } from './routes/leads';
 import { assetsRouter } from './routes/assets';
 import { gestaoRouter } from './routes/gestao';
+import { campaignsRouter } from './routes/campaigns';
 import { alertsRouter } from './routes/alerts';
 import { publicLeadsRouter } from './routes/publicLeads';
 import { biLayoutsRouter } from './routes/biLayouts';
@@ -77,6 +78,7 @@ app.use('/api/consultas', consultasRouter);
 app.use('/api/leads', leadsRouter);
 app.use('/api/assets', assetsRouter);
 app.use('/api/gestao', gestaoRouter);
+app.use('/api/campaigns', campaignsRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/public', publicLeadsRouter);
 

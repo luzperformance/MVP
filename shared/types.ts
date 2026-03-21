@@ -205,6 +205,24 @@ export interface LeadActivity {
   created_at: string;
 }
 
+// CRM — Campanhas de anúncios (manual, Kanban Leads)
+export type AdCampaignPlatform = 'meta' | 'google' | 'outro';
+export type AdCampaignStatus = 'rascunho' | 'ativa' | 'pausada' | 'encerrada';
+
+export interface AdCampaign {
+  id: string;
+  name: string;
+  platform: AdCampaignPlatform;
+  budget_monthly?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status: AdCampaignStatus;
+  notes?: string | null;
+  deleted_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // CRM — Assets
 export type AssetType = 'equipamento' | 'protocolo' | 'suplemento' | 'contrato' | 'documento' | 'outro';
 export type AssetStatus = 'ativo' | 'inativo' | 'vendido' | 'expirado';

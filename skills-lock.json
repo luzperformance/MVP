@@ -21,11 +21,6 @@
       "sourceType": "github",
       "computedHash": "516bd2154eb843a8240e43d5b285229129853114ad7075a5e141e1c08e408c84"
     },
-    "investigation-mode": {
-      "source": "vercel-labs/vercel-plugin",
-      "sourceType": "github",
-      "computedHash": "d3a6693515cd744c61839b8178d5363276c0c07ba5c836d2ec5806d408a1fe07"
-    },
     "modern-auth-2026": {
       "source": "curiositech/some_claude_skills",
       "sourceType": "github",

@@ -91,7 +91,8 @@ export default function App() {
               <Route path="crm/leads" element={<LeadsPage />} />
               <Route path="crm/leads/:id" element={<LeadDetailPage />} />
               <Route path="crm/assets" element={<AssetsPage />} />
-              <Route path="gestao" element={<GestaoPage />} />
+              <Route path="crm/seguimento" element={<GestaoPage />} />
+              <Route path="gestao" element={<Navigate to="/crm/seguimento" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
