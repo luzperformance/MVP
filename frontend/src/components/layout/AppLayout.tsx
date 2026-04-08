@@ -62,7 +62,7 @@ export default function AppLayout() {
         >
           <Menu size={24} aria-hidden />
         </button>
-        <span className="mobile-header-title">Prontuário</span>
+        <span className="mobile-header-title">Prontuário Esportivo</span>
       </header>
 
       {/* Overlay when sidebar open on mobile */}
@@ -84,7 +84,7 @@ export default function AppLayout() {
             <Activity size={20} color="var(--luz-gold)" aria-hidden />
             <div className="sidebar-logo-text-wrap">
               <div className="sidebar-logo-text">PRONTUÁRIO</div>
-              <div className="sidebar-logo-sub">LuzPerformance</div>
+              <div className="sidebar-logo-sub">Terapias Esportivas</div>
             </div>
           </div>
           <div className="sidebar-logo-actions">
@@ -168,7 +168,7 @@ export default function AppLayout() {
             <div className="sidebar-footer-doctor">
               <div className="sidebar-footer-doctor-name">{doctor.name}</div>
               <div className="sidebar-footer-doctor-crm" style={{ marginBottom: 6 }}>
-                {doctor.can_access_records ? `CRM ${doctor.crm}` : 'Secretária'}
+                {doctor.can_access_records ? `CRM ${doctor.crm} · Médico responsável` : 'Secretária'}
               </div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {doctor.can_access_records && (

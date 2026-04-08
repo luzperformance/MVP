@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Users, TrendingUp, Plus, Stethoscope, DollarSign, Calendar, Target } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import AlertsWidget from '../components/AlertsWidget';
+import PageHeader from '../components/ui/PageHeader';
 
 const actions = [
   { to: '/patients',     icon: Users,       label: 'Pacientes',   desc: 'Ver todos os pacientes' },
@@ -18,17 +19,11 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="page-header glass-surface" style={{ borderBottom: '1px solid rgba(201, 164, 74, 0.2)' }}>
-        <TrendingUp size={20} color="var(--luz-gold)" className="animate-pulse-glow" aria-hidden />
-        <div>
-          <div className="font-display text-gold-gradient" style={{ fontWeight: 700, fontSize: 18, letterSpacing: '0.04em' }}>
-            LuzPerformance Dashboard
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--luz-gray-dark)', fontWeight: 500 }}>
-            Painel de Controle | Bem-vindo, {doctor?.name ?? 'Doutor'}
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={TrendingUp}
+        title="Painel Clínico"
+        subtitle={`Rotina do consultório esportivo | ${doctor?.name ?? 'Médico(a) responsável'}`}
+      />
 
       <div className="page-content grid-pattern">
         {/* Quick Access Grid */}
@@ -62,30 +57,30 @@ export default function DashboardPage() {
           <div className="card glass-card shadow-gold">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
               <Target size={20} color="var(--luz-gold)" />
-              <h3 className="font-display" style={{ fontSize: 14, color: 'var(--luz-white)', margin: 0 }}>Guia de Performance</h3>
+              <h3 className="font-display" style={{ fontSize: 14, color: 'var(--luz-white)', margin: 0 }}>Playbook do Consultório</h3>
             </div>
             
             <div style={{ position: 'relative' }}>
               <ul style={{ color: 'var(--luz-gray)', fontSize: 13, lineHeight: 2.2, listStyle: 'none', padding: 0 }}>
                 <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--luz-gold)' }} />
-                  <span><strong style={{ color: 'var(--luz-white)' }}>Pacientes</strong> &mdash; Gestão centralizada e busca rápida</span>
+                  <span><strong style={{ color: 'var(--luz-white)' }}>Pacientes</strong> &mdash; Linha de cuidado e histórico clínico completo</span>
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--luz-gold)' }} />
-                  <span><strong style={{ color: 'var(--luz-white)' }}>Consultas</strong> &mdash; Sincronização via Google Calendar</span>
+                  <span><strong style={{ color: 'var(--luz-white)' }}>Consultas</strong> &mdash; Planejamento semanal com foco em adesão terapêutica</span>
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--luz-gold)' }} />
-                  <span><strong style={{ color: 'var(--luz-white)' }}>Bioconv</strong> &mdash; Análise de markers com IA integrada</span>
+                  <span><strong style={{ color: 'var(--luz-white)' }}>Bioconv</strong> &mdash; Biomarcadores para decisão clínica esportiva</span>
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--luz-gold)' }} />
-                  <span><strong style={{ color: 'var(--luz-white)' }}>Antes & Depois</strong> &mdash; Registro visual de evolução</span>
+                  <span><strong style={{ color: 'var(--luz-white)' }}>Antes & Depois</strong> &mdash; Evidência visual da evolução funcional</span>
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--luz-gold)' }} />
-                  <span><strong style={{ color: 'var(--luz-white)' }}>Financeiro</strong> &mdash; BI de faturamento e despesas</span>
+                  <span><strong style={{ color: 'var(--luz-white)' }}>Financeiro</strong> &mdash; Sustentação do consultório e previsibilidade mensal</span>
                 </li>
               </ul>
             </div>

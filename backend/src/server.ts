@@ -25,9 +25,18 @@ import { biLayoutsRouter } from './routes/biLayouts';
 import { lgpdMiddleware } from './middleware/lgpd';
 import { logger } from './services/logger';
 
+import { apiRouter as cleanApiRouter } from './presentation/routes';
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 const USE_PG = process.env.USE_PG === 'true';
+
+// ... (keep existing setup for now for safety)
+
+// === NEW CLEAN ARCHITECTURE ROUTES ===
+app.use('/api/v2', cleanApiRouter);
+
+// === EXISTING ROUTES (for migration) ===
 
 // === SECURITY ===
 app.use(helmet());
