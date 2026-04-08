@@ -31,15 +31,7 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response) => {
       doctor = rows[0];
     } else {
       const db = getSqliteDb();
-      const stmt = db.prepare('SELECT * FROM doctor WHERE email = ?');
-      stmt.bind([email]);
-      if (stmt.step()) {
-        const cols = stmt.getColumnNames();
-        const vals = stmt.get();
-        doctor = {} as any;
-        cols.forEach((col, i) => { doctor[col] = vals[i]; });
-      }
-      stmt.free();
+      doctor = db.prepare('SELECT * FROM doctor WHERE email = ?').get(email);
     }
 
     if (!doctor) {

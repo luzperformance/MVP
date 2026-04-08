@@ -4,12 +4,19 @@
   "description": "Orquestrador de scripts para o MVP Luz Performance",
   "scripts": {
     "install:all": "npm install --prefix frontend && npm install --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "build": "npm run build:frontend && npm run build:backend",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
-    "dev:full": "npx concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "start": "start-all.bat"
+    "dev": "npx concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "start": "NODE_ENV=production node backend/dist/server.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
 }
+
