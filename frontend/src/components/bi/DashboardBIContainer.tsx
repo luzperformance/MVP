@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import ReactGridLayout from 'react-grid-layout';
-const { Responsive: ResponsiveGridLayoutOriginal, WidthProvider } = ReactGridLayout as any;
-const ResponsiveGridLayout = WidthProvider(ResponsiveGridLayoutOriginal);
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+// react-grid-layout v2: WidthProvider lives in the /legacy subpath
+import { WidthProvider, ResponsiveReactGridLayout } from 'react-grid-layout/legacy';
 import { Plus } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import EmptyStateGlass from './EmptyStateGlass';
@@ -11,12 +10,14 @@ import ChartWidget, { ChartWidgetData } from './ChartWidget';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
+const ResponsiveGridLayout = WidthProvider(ResponsiveReactGridLayout);
+
 interface DashboardBIContainerProps {
   patientId: string;
 }
 
 interface WidgetConfig {
-  i: string;         // grid id
+  i: string;
   x: number;
   y: number;
   w: number;
@@ -27,35 +28,39 @@ interface WidgetConfig {
 export default function DashboardBIContainer({ patientId }: DashboardBIContainerProps) {
   const token = useAuthStore((state) => state.token);
 
-  const [layout, setLayout] = useState<WidgetConfig[]>([]);
+  const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Timeline data: map of marker_name -> ChartWidgetData
   const [timelineMap, setTimelineMap] = useState<Record<string, ChartWidgetData>>({});
   const [timelineLoading, setTimelineLoading] = useState(false);
 
-  // Fetch saved layout
+  // Debounce timer ref for layout saves
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ─── Fetch persisted layout ────────────────────────────────────────────────
   useEffect(() => {
+    let cancelled = false;
     async function fetchLayout() {
       try {
         const res = await fetch(`/api/patients/${patientId}/layout`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        if (data?.layout && Array.isArray(data.layout)) {
-          setLayout(data.layout);
+        if (!cancelled && data?.layout && Array.isArray(data.layout)) {
+          setWidgets(data.layout);
         }
       } catch (err) {
         console.error('Fetch layout err:', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchLayout();
+    return () => { cancelled = true; };
   }, [patientId, token]);
 
-  // Fetch timeline data for all markers
+  // ─── Fetch timeline (biomarker series) ────────────────────────────────────
   const fetchTimeline = useCallback(async () => {
     setTimelineLoading(true);
     try {
@@ -81,156 +86,170 @@ export default function DashboardBIContainer({ patientId }: DashboardBIContainer
     fetchTimeline();
   }, [fetchTimeline]);
 
-  const saveLayout = async (newLayout: WidgetConfig[]) => {
-    try {
-      await fetch(`/api/patients/${patientId}/layout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ layout: newLayout }),
-      });
-    } catch (err) {
-      console.error('Save layout err:', err);
-    }
-  };
+  // ─── Persist layout (debounced 600ms) ──────────────────────────────────────
+  const saveLayout = useCallback((newWidgets: WidgetConfig[]) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        await fetch(`/api/patients/${patientId}/layout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ layout: newWidgets }),
+        });
+      } catch (err) {
+        console.error('Save layout err:', err);
+      }
+    }, 600);
+  }, [patientId, token]);
 
-  const handleLayoutChange = (currentLayout: any[]) => {
-    // Merge positional data back while keeping markerName metadata
-    const merged: WidgetConfig[] = currentLayout.map((item) => {
-      const existing = layout.find((l) => l.i === item.i);
-      return {
-        ...item,
-        markerName: existing?.markerName,
-      };
+  // ─── Handlers ──────────────────────────────────────────────────────────────
+  const handleLayoutChange = useCallback((currentLayout: readonly { i: string; x: number; y: number; w: number; h: number }[]) => {
+    const merged: WidgetConfig[] = (currentLayout as WidgetConfig[]).map((item) => {
+      const existing = widgets.find((w) => w.i === item.i);
+      return { ...item, markerName: existing?.markerName };
     });
-    setLayout(merged);
+    setWidgets(merged);
     saveLayout(merged);
-  };
+  }, [saveLayout]);
 
-  const handleAddWidget = (marker: string) => {
-    const freshId = `widget-${Date.now()}`;
-    const newWidget: WidgetConfig = {
-      i: freshId,
-      x: (layout.length * 6) % 12,
-      y: Infinity, // place at bottom
-      w: 6,
-      h: 8,
-      markerName: marker,
-    };
-    const newL = [...layout, newWidget];
-    setLayout(newL);
-    saveLayout(newL);
+  const handleAddWidget = useCallback((marker: string) => {
+    setWidgets((prev) => {
+      const next: WidgetConfig[] = [
+        ...prev,
+        {
+          i: `widget-${Date.now()}`,
+          x: (prev.length * 6) % 12,
+          y: Infinity,
+          w: 6,
+          h: 8,
+          markerName: marker,
+        },
+      ];
+      saveLayout(next);
+      return next;
+    });
     setModalOpen(false);
-  };
+  }, [saveLayout]);
 
-  const handleRemoveWidget = (id: string) => {
-    const l = layout.filter((x) => x.i !== id);
-    setLayout(l);
-    saveLayout(l);
-  };
+  const handleRemoveWidget = useCallback((id: string) => {
+    setWidgets((prev) => {
+      const next = prev.filter((w) => w.i !== id);
+      saveLayout(next);
+      return next;
+    });
+  }, [saveLayout]);
 
+  // ─── Render ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div
-        className="flex items-center justify-center mt-8 bg-white/5 border border-white/10 backdrop-blur rounded-xl"
-        style={{ minHeight: 200 }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 200,
+          marginTop: 32,
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12,
+        }}
       >
-        <div style={{ color: '#c9a44a', fontSize: 13, opacity: 0.7, fontFamily: 'Montserrat, sans-serif' }}>
+        <span style={{ color: '#c9a44a', fontSize: 13, opacity: 0.7, fontFamily: 'Montserrat, sans-serif' }}>
           Carregando Painel Analítico...
-        </div>
+        </span>
       </div>
     );
   }
 
+  const gridLayout = widgets.map(({ i, x, y, w, h }) => ({ i, x, y, w, h }));
+
   return (
-    <div className="mt-8 animate-fade-in-up">
-      {layout.length === 0 ? (
+    <div style={{ marginTop: 32 }}>
+      {widgets.length === 0 ? (
         <EmptyStateGlass onAdd={() => setModalOpen(true)} />
       ) : (
         <>
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          {/* ── Header ── */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div>
-              <h2
-                className="font-display font-bold text-white"
-                style={{ fontSize: 18, margin: 0 }}
-              >
+              <h2 style={{ margin: 0, fontFamily: 'Orbitron, sans-serif', color: '#fff', fontSize: 16, fontWeight: 700 }}>
                 Dashboard Analítico
               </h2>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
-                {layout.length} widget{layout.length !== 1 ? 's' : ''} · arraste para reorganizar
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', marginTop: 3 }}>
+                {widgets.length} widget{widgets.length !== 1 ? 's' : ''} · arraste para reorganizar
               </div>
             </div>
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="btn-primary flex items-center gap-2"
               style={{
-                padding: '8px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'linear-gradient(135deg,#c9a44a,#8b6914)',
+                border: 'none',
                 borderRadius: 999,
+                padding: '8px 18px',
+                color: '#fff',
+                fontFamily: 'Montserrat, sans-serif',
                 fontSize: 11,
-                letterSpacing: '0.08em',
                 fontWeight: 700,
+                letterSpacing: '0.08em',
+                cursor: 'pointer',
               }}
             >
-              <Plus size={14} />
+              <Plus size={13} />
               NOVO GRÁFICO
             </button>
           </div>
 
-          {/* Grid */}
+          {/* ── Grid ── */}
           <ResponsiveGridLayout
             className="layout"
-            layouts={{ lg: layout }}
+            layouts={{ lg: gridLayout }}
             breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
             cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
             rowHeight={30}
-            onLayoutChange={handleLayoutChange}
             draggableHandle=".widget-drag-handle"
-            isResizable={true}
+            isResizable
+            onLayoutChange={handleLayoutChange}
           >
-            {layout.map((item) => {
+            {widgets.map((item) => {
               const markerName = item.markerName || 'Marcador';
               const markerData = timelineMap[markerName] ?? null;
               return (
                 <div
                   key={item.i}
-                  className="bg-white/5 border border-white/10 backdrop-blur rounded-xl flex flex-col"
                   style={{
-                    transition: 'box-shadow 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.boxShadow = '0 0 30px rgba(201,164,74,0.15)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.boxShadow = 'none';
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.09)',
+                    borderRadius: 12,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
                   }}
                 >
-                  {/* Widget Header / Drag Handle */}
+                  {/* Drag handle / widget header */}
                   <div
-                    className="widget-drag-handle cursor-move flex justify-between items-center"
+                    className="widget-drag-handle"
                     style={{
-                      padding: '12px 14px 10px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '10px 14px 8px',
                       borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      cursor: 'move',
                     }}
                   >
                     <div>
-                      <div
-                        style={{
-                          fontFamily: 'Orbitron, sans-serif',
-                          color: '#c9a44a',
-                          fontWeight: 700,
-                          fontSize: 11,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.06em',
-                        }}
-                      >
+                      <div style={{ fontFamily: 'Orbitron, sans-serif', color: '#c9a44a', fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                         {markerName}
                       </div>
                       {markerData?.unit && (
-                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 1 }}>
+                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', marginTop: 1 }}>
                           {markerData.category || 'Biomarcador'} · {markerData.unit}
                         </div>
                       )}
@@ -245,9 +264,8 @@ export default function DashboardBIContainer({ patientId }: DashboardBIContainer
                         cursor: 'pointer',
                         fontSize: 14,
                         lineHeight: 1,
-                        padding: '2px 4px',
+                        padding: '2px 5px',
                         borderRadius: 4,
-                        transition: 'color 0.15s',
                       }}
                       onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#ef4444'; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.2)'; }}
@@ -256,8 +274,8 @@ export default function DashboardBIContainer({ patientId }: DashboardBIContainer
                     </button>
                   </div>
 
-                  {/* Chart Area */}
-                  <div style={{ flex: 1, minHeight: 0, padding: '8px 4px 4px 8px' }}>
+                  {/* Chart */}
+                  <div style={{ flex: 1, minHeight: 0, padding: '6px 4px 4px 6px' }}>
                     <ChartWidget
                       markerName={markerName}
                       markerData={markerData}
