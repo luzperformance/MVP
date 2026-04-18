@@ -416,6 +416,12 @@ export async function initDatabase() {
       console.log('✨ Migrated: doctor.is_admin added');
     } catch (e) { /* already exists */ }
 
+    try {
+      // Add google_tokens to doctor (for OAuth2 calendar integration)
+      sqliteDb.run("ALTER TABLE doctor ADD COLUMN google_tokens TEXT DEFAULT NULL");
+      console.log('✨ Migrated: doctor.google_tokens added');
+    } catch (e) { /* already exists */ }
+
     saveSqliteSync();
     console.log('✅ SQLite initialized (Zero-Config MVP Mode)');
   }

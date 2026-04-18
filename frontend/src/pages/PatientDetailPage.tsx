@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 import type { Patient, Record as MedicalRecord } from '@shared/types';
 import DashboardBIContainer from '../components/bi/DashboardBIContainer';
+import ScheduleConsultaButton from '../components/calendar/ScheduleConsultaButton';
 
 function renderMarkdownSections(text: string) {
   const lines = text.split('\n');
@@ -172,6 +173,13 @@ export default function PatientDetailPage() {
             }
             Resumo IA
           </button>
+          
+          <ScheduleConsultaButton 
+            patientName={patient.name} 
+            patientId={patient.id} 
+            compact={true} 
+          />
+
           <Link to={`/patients/${id}/records/new`} className="btn btn-primary btn-sm">
             <Plus size={16} /> Novo Registro
           </Link>

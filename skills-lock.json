@@ -46,6 +46,11 @@
       "sourceType": "github",
       "computedHash": "6bf279eaa671e37687e8da5414d405d7ca7ad396bab41a9dc02a2ae585da3cb4"
     },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+    },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",

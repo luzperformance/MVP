@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import type { SOAPNote } from '@shared/types';
+import EventFormModal from '../components/calendar/EventFormModal';
 
 type Source = 'manual' | 'transcricao' | 'resumo';
 
@@ -153,6 +154,9 @@ export default function NewRecordPage() {
   const [preConsultError, setPreConsultError] = useState('');
   const [preConsultExpanded, setPreConsultExpanded] = useState(true);
 
+  const [scheduleReturn, setScheduleReturn] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
+
   const loadPreConsult = useCallback(() => {
     if (!patientId || !token) return;
     setPreConsultLoading(true);
@@ -215,7 +219,12 @@ export default function NewRecordPage() {
         setSaveError(body?.error || 'Erro ao salvar consulta.');
         return;
       }
-      navigate(`/patients/${patientId}`);
+      
+      if (scheduleReturn) {
+        setShowEventModal(true);
+      } else {
+        navigate(`/patients/${patientId}`);
+      }
     } catch {
       setSaveError('Erro de conexão.');
     } finally {
@@ -464,6 +473,19 @@ export default function NewRecordPage() {
           ))}
         </div>
 
+        <div className="card glass-card animate-fade-in-up" style={{ animationDelay: '200ms', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <input 
+            type="checkbox" 
+            id="schedule-return" 
+            checked={scheduleReturn} 
+            onChange={(e) => setScheduleReturn(e.target.checked)} 
+            style={{ width: 18, height: 18, accentColor: 'var(--luz-gold)' }} 
+          />
+          <label htmlFor="schedule-return" style={{ color: 'var(--luz-white)', fontSize: 14, cursor: 'pointer', flex: 1 }}>
+            Agendar retorno após salvar consulta
+          </label>
+        </div>
+
         {saveError && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
@@ -476,6 +498,16 @@ export default function NewRecordPage() {
           </div>
         )}
       </div>
+
+      <EventFormModal 
+        isOpen={showEventModal} 
+        onClose={() => navigate(`/patients/${patientId}`)} 
+        onSuccess={() => navigate(`/patients/${patientId}`)}
+        prefill={{ 
+          summary: 'Retorno de Consulta',
+          description: `ID Paciente: ${patientId}`
+        }}
+      />
 
       <style>{`
         @keyframes shimmer {

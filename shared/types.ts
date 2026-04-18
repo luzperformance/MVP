@@ -162,7 +162,30 @@ export interface CalendarEventsResponse {
   message?: string;
   error?: string;
   timeZone?: string;
+  authMode?: 'oauth' | 'apikey';
 }
+
+/** DTO for creating a new calendar event from the prontuário */
+export interface CreateCalendarEventDTO {
+  summary: string;
+  description?: string;
+  location?: string;
+  startDateTime: string; // ISO 8601
+  endDateTime: string;   // ISO 8601
+  patientId?: string;
+  patientName?: string;
+}
+
+/** Response from POST /api/calendar/events */
+export interface CalendarCreateResponse {
+  success: boolean;
+  eventId?: string;
+  htmlLink?: string;
+  error?: string;
+  requiresAuth?: boolean;
+  authUrl?: string;
+}
+
 
 // CRM — Leads
 export type LeadSource = 'indicacao' | 'instagram' | 'google' | 'site' | 'evento' | 'outro';
