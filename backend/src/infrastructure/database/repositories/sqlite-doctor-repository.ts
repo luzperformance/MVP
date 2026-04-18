@@ -1,6 +1,6 @@
 import { Database } from 'sql.js';
-import { IDoctorRepository } from '../../../../domain/repositories/doctor-repository';
-import { Doctor } from '../../../../domain/entities/doctor';
+import { IDoctorRepository } from '../../../domain/repositories/doctor-repository';
+import { Doctor } from '../../../domain/entities/doctor';
 import { SQLiteConnection } from '../sqlite-connection';
 
 export class SQLiteDoctorRepository implements IDoctorRepository {
@@ -78,7 +78,7 @@ export class SQLiteDoctorRepository implements IDoctorRepository {
         doctor.passwordHash,
         doctor.name,
         doctor.crm,
-        doctor.specialty,
+        doctor.specialty ?? null,
         doctor.canAccessRecords ? 1 : 0,
         doctor.canEditAgenda ? 1 : 0,
         doctor.isAdmin ? 1 : 0,
@@ -91,28 +91,28 @@ export class SQLiteDoctorRepository implements IDoctorRepository {
   async update(doctor: Doctor): Promise<void> {
     const db = await this.getDb();
     db.run(
-      `UPDATE doctor SET 
-        email = ?, 
-        password_hash = ?, 
-        name = ?, 
-        crm = ?, 
-        specialty = ?, 
-        can_access_records = ?, 
-        can_edit_agenda = ?, 
-        is_admin = ?, 
-        role = ? 
+      `UPDATE doctor SET
+        email = ?,
+        password_hash = ?,
+        name = ?,
+        crm = ?,
+        specialty = ?,
+        can_access_records = ?,
+        can_edit_agenda = ?,
+        is_admin = ?,
+        role = ?
        WHERE id = ?`,
       [
         doctor.email,
         doctor.passwordHash,
         doctor.name,
         doctor.crm,
-        doctor.specialty,
+        doctor.specialty ?? null,
         doctor.canAccessRecords ? 1 : 0,
         doctor.canEditAgenda ? 1 : 0,
         doctor.isAdmin ? 1 : 0,
         doctor.role,
-        doctor.id
+        doctor.id ?? null
       ]
     );
     SQLiteConnection.save(db);

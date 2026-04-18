@@ -1,0 +1,214 @@
+analyze_task:
+  description: >
+    Analise o estado atual do projeto em {mvp_dir}. Leia os seguintes arquivos:
+
+    BACKEND:
+    - {mvp_dir}/backend/src/server.ts
+    - {mvp_dir}/backend/src/routes/auth.ts
+    - {mvp_dir}/backend/src/routes/patients.ts
+    - {mvp_dir}/backend/src/routes/records.ts
+    - {mvp_dir}/backend/src/routes/exams.ts
+    - {mvp_dir}/backend/src/routes/consultas.ts
+    - {mvp_dir}/backend/src/routes/calendar.ts
+    - {mvp_dir}/backend/src/routes/finance.ts
+    - {mvp_dir}/backend/src/db/database.ts
+    - {mvp_dir}/backend/src/middleware/auth.ts
+    - {mvp_dir}/shared/types.ts
+
+    FRONTEND:
+    - {mvp_dir}/frontend/src/App.tsx
+    - {mvp_dir}/frontend/src/stores/authStore.ts
+    - {mvp_dir}/frontend/src/pages/DashboardPage.tsx
+    - {mvp_dir}/frontend/src/pages/PatientsPage.tsx
+    - {mvp_dir}/frontend/src/pages/LoginPage.tsx
+    - {mvp_dir}/frontend/src/pages/ConsultasPage.tsx
+    - {mvp_dir}/frontend/src/pages/AgendaPage.tsx
+    - {mvp_dir}/frontend/src/pages/FinanceDashboardPage.tsx
+
+    Para cada módulo (Auth, Pacientes, Prontuário, Exames, Agenda, Financeiro,
+    Gestão, Leads, Campanhas), classifique:
+    ✅ Implementado | ⚠️ Parcial | ❌ Faltando
+
+    Liste os arquivos que precisam ser criados ou modificados com caminhos exatos.
+
+  expected_output: >
+    Relatório estruturado em JSON com:
+    {
+      "status_modulos": { "auth": "...", "pacientes": "...", ... },
+      "arquivos_criar": ["caminho/arquivo.ts", ...],
+      "arquivos_modificar": ["caminho/arquivo.ts", ...],
+      "prioridades": ["1. ...", "2. ...", ...],
+      "padroes_projeto": { "imports": "...", "db_pattern": "...", "naming": "..." }
+    }
+  agent: analista
+
+auth_task:
+  description: >
+    Com base no relatório de análise, melhore o sistema de autenticação.
+
+    ARQUIVOS DE REFERÊNCIA (Google OAuth + JWT completo):
+    - {auth_ref_dir}/AuthContext.tsx
+    - {auth_ref_dir}/auth-google-route.ts
+    - {auth_ref_dir}/auth-me-refresh-logout-routes.ts
+    - {auth_ref_dir}/middleware.ts
+    - {auth_ref_dir}/auth-schema.ts
+    - {auth_ref_dir}/auth-components.tsx
+
+    ARQUIVOS ATUAIS DO PROJETO:
+    - {mvp_dir}/backend/src/routes/auth.ts
+    - {mvp_dir}/backend/src/middleware/auth.ts
+    - {mvp_dir}/frontend/src/stores/authStore.ts
+    - {mvp_dir}/frontend/src/pages/LoginPage.tsx
+
+    IMPLEMENTAR:
+    1. Adicionar rota GET /api/auth/me (retornar usuário atual via token)
+    2. Adicionar rota POST /api/auth/refresh (renovar token sem re-login)
+    3. Adicionar rota POST /api/auth/logout (invalidar token no servidor)
+    4. Adicionar audit_log de LOGIN_SUCCESS e LOGIN_FAILED no banco
+    5. Melhorar middleware auth.ts: extrair userId e passar em req.user
+    6. Adaptar AuthContext do frontend para usar as novas rotas /me e /refresh
+    7. Adicionar suporte opcional a Google OAuth (variável GOOGLE_CLIENT_ID)
+
+    REGRAS:
+    - Manter compatibilidade com o auth email+senha existente
+    - Usar o padrão ESM do projeto (import/export)
+    - Banco: SQLite via better-sqlite3 (pool não existe, usar getSqliteDb())
+    - Escrever os arquivos finais nos caminhos corretos do projeto
+
+  expected_output: >
+    Arquivos escritos em disco:
+    - {mvp_dir}/backend/src/routes/auth.ts (atualizado)
+    - {mvp_dir}/backend/src/middleware/auth.ts (atualizado)
+    - {mvp_dir}/frontend/src/stores/authStore.ts (atualizado se necessário)
+    Resumo das mudanças implementadas.
+  agent: auth_agent
+  context:
+    - analyze_task
+
+backend_task:
+  description: >
+    Com base no relatório de análise, implemente os módulos backend faltantes
+    no projeto {mvp_dir}.
+
+    PADRÃO DO PROJETO (seguir rigorosamente):
+    - Routes em: backend/src/routes/nomeRoute.ts
+    - Registrar no: backend/src/server.ts
+    - Banco via: getSqliteDb() de '../db/database'
+    - Middleware auth: requireAuth de '../middleware/auth'
+    - Sempre incluir audit_log em operações com dados de pacientes
+    - Usar TypeScript com tipagem explícita
+
+    IMPLEMENTAR (prioridade do relatório de análise):
+    1. Se agenda não completa: CRUD de eventos (criar, editar, deletar, listar por data)
+    2. Se financeiro não completo: lançamentos receita/despesa, relatório mensal
+    3. Se gestão de usuários faltando: CRUD de médicos/assistentes com permissões
+    4. Se campanhas faltando: envio de lembretes por lista de pacientes
+    5. Se transcrição IA faltando: endpoint POST /api/transcription/process (Gemini)
+    6. Registrar todas as novas rotas em server.ts
+
+    LGPD obrigatório em todas as operações com dados de pacientes:
+    - INSERT em audit_log com userId, action, patientId, timestamp
+
+  expected_output: >
+    Arquivos criados/modificados em disco no projeto {mvp_dir}/backend/
+    Lista de endpoints criados com método e path.
+  agent: backend_agent
+  context:
+    - analyze_task
+
+frontend_task:
+  description: >
+    Com base no relatório de análise, implemente os componentes e páginas
+    React faltantes no projeto {mvp_dir}/frontend/.
+
+    DESIGN SYSTEM (obrigatório):
+    - Cores: navy #0d1f33 (fundo), gold var(--luz-gold) (destaque)
+    - Componentes UI: src/components/ui/ (cards, botões, inputs existentes)
+    - Ícones: lucide-react
+    - CSS: Tailwind + variáveis CSS de index.css
+    - State: Zustand (stores/)
+    - Navegação: React Router v6 (useNavigate, Link)
+
+    IMPLEMENTAR (prioridade do relatório de análise):
+    1. Se AgendaPage incompleta: calendário mensal/semanal com eventos CRUD
+    2. Se FinanceDashboardPage incompleta: gráficos receita/despesa, filtros por mês
+    3. Componentes reutilizáveis faltando: Modal de confirmação, Toast de notificação
+    4. Se GestaoPage incompleta: listagem e gestão de usuários do sistema
+    5. Melhorar DashboardPage: widgets de KPI (pacientes, consultas, receita do mês)
+    6. Registrar novas rotas em App.tsx (com proteção requireAuth se necessário)
+
+  expected_output: >
+    Arquivos criados/modificados em disco no projeto {mvp_dir}/frontend/
+    Lista de páginas/componentes implementados.
+  agent: frontend_agent
+  context:
+    - analyze_task
+    - backend_task
+
+react_performance_task:
+  description: >
+    Revise e otimize os componentes React do projeto {mvp_dir}/frontend/src/.
+
+    Leia os seguintes arquivos prioritários:
+    - {mvp_dir}/frontend/src/pages/DashboardPage.tsx
+    - {mvp_dir}/frontend/src/pages/PatientsPage.tsx
+    - {mvp_dir}/frontend/src/pages/ExamDashboardPage.tsx
+    - {mvp_dir}/frontend/src/pages/ConsultasPage.tsx
+    - {mvp_dir}/frontend/src/pages/AgendaPage.tsx
+    - {mvp_dir}/frontend/src/App.tsx
+
+    Para cada arquivo, aplique as regras de performance na ordem de prioridade:
+
+    CRÍTICO — Corrigir obrigatoriamente:
+    1. Waterfalls: fetches independentes dentro de useEffect devem usar Promise.all()
+    2. Bundle: imports de barrel files (ex: import X from 'lucide-react') →
+       trocar por imports diretos quando o componente importa 3+ ícones
+    3. Bundle: componentes pesados (gráficos, tabelas grandes) → React.lazy() + Suspense
+
+    MÉDIO — Corrigir se encontrado:
+    4. Re-renders: setState(value) em callbacks → setState(prev => ...)
+    5. Re-renders: useEffect com objeto como dependência → extrair primitivas
+    6. Re-renders: estado derivado calculado em useEffect → mover para render
+    7. Rendering: {condition && <Component />} → {condition ? <Component /> : null}
+
+    Para cada problema encontrado: arquivo, linha, regra violada, código corrigido.
+    Aplicar as correções diretamente nos arquivos.
+
+  expected_output: >
+    Relatório de otimizações:
+    - Problemas encontrados (arquivo:linha — regra — antes/depois)
+    - Correções aplicadas em disco
+    - Estimativa de impacto (bundle size, re-renders evitados)
+  agent: react_performance_agent
+  context:
+    - frontend_task
+
+qa_task:
+  description: >
+    Revise todo o código implementado pelas tarefas anteriores no projeto {mvp_dir}.
+
+    VERIFICAR:
+    1. LGPD — Todo acesso a dados de pacientes tem audit_log?
+    2. Segurança — Todas as rotas sensíveis têm middleware requireAuth?
+    3. SQL Injection — Todos os queries usam parâmetros preparados (? ou $1)?
+    4. Erros — Todos os try/catch retornam erro genérico (sem stack trace em prod)?
+    5. Tipos — TypeScript sem 'any' desnecessário?
+    6. XSS — Inputs sanitizados antes de salvar?
+    7. Tokens — JWT_SECRET tem fallback inseguro 'fallback_secret'? Remover.
+
+    Para cada problema encontrado:
+    - Informe arquivo e linha
+    - Explique o risco
+    - Forneça a correção exata
+    - Aplique a correção no arquivo
+
+  expected_output: >
+    Relatório de segurança com:
+    - Problemas encontrados (arquivo:linha — risco — correção)
+    - Problemas corrigidos (confirmação)
+    - Status final: APROVADO / REQUER ATENÇÃO
+  agent: qa_agent
+  context:
+    - auth_task
+    - backend_task
+    - frontend_task

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Responsive as ResponsiveGridLayoutOriginal, WidthProvider } from 'react-grid-layout';
+import ReactGridLayout from 'react-grid-layout';
+const { Responsive: ResponsiveGridLayoutOriginal, WidthProvider } = ReactGridLayout as any;
 const ResponsiveGridLayout = WidthProvider(ResponsiveGridLayoutOriginal);
 import { Plus } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
@@ -93,7 +94,7 @@ export default function DashboardBIContainer({ patientId }: DashboardBIContainer
         <>
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold font-display text-white">Dashboard Analítico</h2>
-            <button onClick={() => setModalOpen(true)} className="btn-primary flex items-center gap-2" style={{ padding: '8px 16px', borderRadius: 999, fontSize: 12 }}>
+            <button type="button" onClick={() => setModalOpen(true)} className="btn-primary flex items-center gap-2" style={{ padding: '8px 16px', borderRadius: 999, fontSize: 12 }}>
               <Plus size={16} /> NOVO GRÁFICO
             </button>
           </div>
@@ -112,7 +113,7 @@ export default function DashboardBIContainer({ patientId }: DashboardBIContainer
               <div key={item.i} className="bg-white/5 border border-white/10 backdrop-blur rounded-xl flex flex-col hover:shadow-[0_0_30px_rgba(201,164,74,0.15)] transition-shadow">
                 <div className="widget-drag-handle cursor-move font-display text-[#c9a44a] font-bold text-sm mb-2 border-b border-white/10 pb-2 p-4 pb-0 flex justify-between">
                   <span>Marcador Mapeado</span>
-                  <button onClick={() => {
+                  <button type="button" onClick={() => {
                     const l = layout.filter(x => x.i !== item.i);
                     setLayout(l);
                     saveLayout(l);

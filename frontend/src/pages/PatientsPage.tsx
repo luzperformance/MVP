@@ -116,7 +116,7 @@ export default function PatientsPage() {
             Gestão e busca de prontuários
           </div>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary btn-sm">
+        <button type="button" onClick={() => setShowModal(true)} className="btn btn-primary btn-sm">
           <Plus size={16} /> Novo Paciente
         </button>
       </div>

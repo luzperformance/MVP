@@ -14,7 +14,7 @@ export default function EmptyStateGlass({ onAdd }: EmptyStateGlassProps) {
         Não há exames disponíveis para gerar o panorama analítico deste paciente. 
         Adicione os primeiros marcadores para inicializar o Dashboard BI Mapeado.
       </p>
-      <button onClick={onAdd} className="btn-primary flex items-center justify-center gap-2" style={{ padding: '12px 24px', borderRadius: 999 }}>
+      <button type="button" onClick={onAdd} className="btn-primary flex items-center justify-center gap-2" style={{ padding: '12px 24px', borderRadius: 999 }}>
         <Plus size={18} /> Adicionar Marcador
       </button>
     </div>

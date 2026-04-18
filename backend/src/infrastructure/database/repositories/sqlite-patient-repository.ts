@@ -1,6 +1,6 @@
 import { Database } from 'sql.js';
-import { IPatientRepository } from '../../../../domain/repositories/patient-repository';
-import { Patient } from '../../../../domain/entities/patient';
+import { IPatientRepository } from '../../../domain/repositories/patient-repository';
+import { Patient } from '../../../domain/entities/patient';
 import { SQLiteConnection } from '../sqlite-connection';
 
 export class SQLitePatientRepository implements IPatientRepository {
@@ -68,7 +68,7 @@ export class SQLitePatientRepository implements IPatientRepository {
     db.run(
       `INSERT INTO patients (id, name, birth_date, phone, email, gender, mgmt_status) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [json.id, json.name, json.birthDate, json.phone, json.email, json.gender, json.mgmtStatus]
+      [json.id, json.name, json.birthDate ?? null, json.phone ?? null, json.email ?? null, json.gender ?? null, json.mgmtStatus ?? null]
     );
     SQLiteConnection.save(db);
   }
@@ -86,7 +86,7 @@ export class SQLitePatientRepository implements IPatientRepository {
         mgmt_status = ?,
         updated_at = datetime('now')
        WHERE id = ?`,
-      [json.name, json.birthDate, json.phone, json.email, json.gender, json.mgmtStatus, json.id]
+      [json.name, json.birthDate ?? null, json.phone ?? null, json.email ?? null, json.gender ?? null, json.mgmtStatus ?? null, json.id]
     );
     SQLiteConnection.save(db);
   }

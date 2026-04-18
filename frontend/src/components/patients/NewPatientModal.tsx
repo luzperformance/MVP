@@ -99,7 +99,7 @@ export default function NewPatientModal({ onClose, onSuccess }: NewPatientModalP
         onClick={e => e.stopPropagation()}
         style={{ width: '95%', maxWidth: 900, maxHeight: '92vh', overflowY: 'auto', position: 'relative', border: '1px solid var(--luz-gold)' }}
       >
-        <button onClick={onClose} className="modal-close-btn" aria-label="Fechar" style={{ top: 20, right: 20 }}>
+        <button type="button" onClick={onClose} className="modal-close-btn" aria-label="Fechar" style={{ top: 20, right: 20 }}>
           <X size={24} />
         </button>
 

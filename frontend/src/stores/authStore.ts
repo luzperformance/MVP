@@ -8,14 +8,17 @@ interface AuthState {
   setAuth: (token: string, doctor: Doctor) => void;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  refreshMe: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       token: null,
       doctor: null,
+
       setAuth: (token, doctor) => set({ token, doctor }),
+
       login: async (email, password) => {
         try {
           const res = await fetch('/api/auth/login', {
@@ -38,9 +41,36 @@ export const useAuthStore = create<AuthState>()(
           return false;
         }
       },
+
       logout: () => {
-        fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+        const token = get().token;
+        if (token) {
+          fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => {});
+        }
         set({ token: null, doctor: null });
+      },
+
+      // Atualiza dados do médico consultando /api/auth/me
+      refreshMe: async () => {
+        const token = get().token;
+        if (!token) return;
+        try {
+          const res = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const doctor = await res.json();
+            set({ doctor });
+          } else if (res.status === 401) {
+            // Token expirado — limpar sessão
+            set({ token: null, doctor: null });
+          }
+        } catch (err) {
+          console.error('refreshMe error:', err);
+        }
       },
     }),
     { name: 'prontuario-auth' }

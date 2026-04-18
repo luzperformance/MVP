@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 
 export interface AuthRequest extends Request {
   doctorId?: number;
+  doctorEmail?: string;
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
@@ -12,9 +13,15 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   }
 
   const token = authHeader.slice(7);
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    return res.status(500).json({ error: 'Configuração de servidor incompleta.' });
+  }
+
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as { doctorId: number };
+    const payload = jwt.verify(token, secret) as { doctorId: number; email: string };
     req.doctorId = payload.doctorId;
+    req.doctorEmail = payload.email;
     next();
   } catch {
     return res.status(401).json({ error: 'Token inválido ou expirado.' });

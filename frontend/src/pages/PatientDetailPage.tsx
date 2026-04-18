@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, FileText, User, Calendar, History, Phone, Mail, FlaskConical, Camera, Brain, Loader, RefreshCw, AlertTriangle, ChevronUp, ChevronDown, Activity, Pill, ClipboardList, Stethoscope } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
-import type { Patient, Record } from '@shared/types';
+import type { Patient, Record as MedicalRecord } from '@shared/types';
 import DashboardBIContainer from '../components/bi/DashboardBIContainer';
 
 function renderMarkdownSections(text: string) {
@@ -94,7 +94,7 @@ export default function PatientDetailPage() {
   const token = useAuthStore(s => s.token);
   
   const [patient, setPatient] = useState<Patient | null>(null);
-  const [records, setRecords] = useState<Record[]>([]);
+  const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -149,7 +149,7 @@ export default function PatientDetailPage() {
     <div className="animate-fade-in">
       <div className="page-header glass-surface" style={{ justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={() => navigate(-1)} className="btn btn-ghost btn-sm" style={{ padding: 0, width: 32, height: 32, minWidth: 32 }}>
+          <button type="button" onClick={() => navigate(-1)} className="btn btn-ghost btn-sm" style={{ padding: 0, width: 32, height: 32, minWidth: 32 }}>
             <ArrowLeft size={18} />
           </button>
           <div>
