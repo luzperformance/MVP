@@ -4,6 +4,7 @@ import { getDb } from '../db/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { processImportWithGemini, processImportDirect, csvToJsonRows } from '../services/leadImporter';
 import { scoreLeadWithAI, scoreLeadRuleBased } from '../services/leadScoring';
+import { isLlmConfigured } from '../services/llmClient';
 
 export const leadsRouter = Router();
 leadsRouter.use(authMiddleware);
@@ -85,7 +86,7 @@ leadsRouter.get('/summary', (_req: AuthRequest, res: Response) => {
   });
 });
 
-// POST /api/leads/import/preview — preview import with Gemini AI mapping
+// POST /api/leads/import/preview — preview import with LLM column mapping
 leadsRouter.post('/import/preview', async (req: AuthRequest, res: Response) => {
   try {
     const { data, format, source_hint, use_ai } = req.body;
@@ -173,7 +174,7 @@ leadsRouter.post('/score/:id', async (req: AuthRequest, res: Response) => {
     let suggestedTemp: string | undefined;
     let nextAction: string | undefined;
 
-    if (use_ai !== false && process.env.GEMINI_API_KEY) {
+    if (use_ai !== false && isLlmConfigured()) {
       const result = await scoreLeadWithAI({
         name: lead.name, email: lead.email, phone: lead.phone,
         company: lead.company, source: lead.source, temperature: lead.temperature,

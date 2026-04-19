@@ -1,4 +1,4 @@
-import { generateWithGemini } from './geminiClient';
+import { generateWithLlm } from './llmClient';
 
 const SCORING_PROMPT = `Você é um assistente de CRM para um médico de medicina esportiva e performance hormonal (LuzPerformance).
 
@@ -87,7 +87,7 @@ export async function scoreLeadWithAI(leadData: {
 DADOS DO LEAD:
 ${JSON.stringify(leadData, null, 2)}`;
 
-  const text = await generateWithGemini(prompt);
+  const text = await generateWithLlm(prompt);
   const clean = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '');
   const parsed: ScoreResult = JSON.parse(clean);
 

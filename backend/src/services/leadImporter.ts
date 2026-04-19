@@ -1,4 +1,4 @@
-import { generateWithGemini } from './geminiClient';
+import { generateWithLlm } from './llmClient';
 
 const LEAD_FIELDS = [
   'name', 'email', 'phone', 'company', 'source', 'status',
@@ -134,7 +134,7 @@ export async function processImportWithGemini(
 ${sourceHint ? `DICA: Os dados vieram de "${sourceHint}"\n` : ''}
 ${dataDescription}`;
 
-  const text = await generateWithGemini(prompt);
+  const text = await generateWithLlm(prompt);
   const clean = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '');
 
   const parsed: ImportResult = JSON.parse(clean);

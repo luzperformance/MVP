@@ -1,4 +1,4 @@
-import { generateWithGemini } from './geminiClient';
+import { generateWithLlm } from './llmClient';
 
 const SYSTEM_PROMPT = `Você é um assistente médico especializado em documentação clínica para um médico de medicina do esporte e performance hormonal no Brasil.
 
@@ -38,7 +38,7 @@ ${rawInput}
 
 Retorne apenas o JSON, sem markdown ou texto adicional.`;
 
-  const text = await generateWithGemini(prompt);
+  const text = await generateWithLlm(prompt);
 
   // Clean potential markdown code blocks
   const clean = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '');

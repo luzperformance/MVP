@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/database';
 import { scoreLeadWithAI, scoreLeadRuleBased } from '../services/leadScoring';
+import { isLlmConfigured } from '../services/llmClient';
 
 export const publicLeadsRouter = Router();
 
@@ -132,7 +133,7 @@ publicLeadsRouter.post('/leads', async (req, res: Response) => {
   let suggestedTemperature: string | undefined;
   let nextAction: string | undefined;
 
-  const wantAI = use_ai !== false && !!process.env.GEMINI_API_KEY;
+  const wantAI = use_ai !== false && isLlmConfigured();
   try {
     if (wantAI) {
       const tags = (() => {

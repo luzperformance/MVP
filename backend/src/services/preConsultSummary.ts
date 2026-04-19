@@ -1,4 +1,4 @@
-import { generateWithGemini } from './geminiClient';
+import { generateWithLlm } from './llmClient';
 
 const SYSTEM_PROMPT = `Você é um assistente médico especializado em medicina do esporte e performance hormonal no Brasil.
 
@@ -60,5 +60,5 @@ ${dataStr}
 
 Gere o resumo pré-consulta em markdown. Retorne apenas o texto do resumo, sem JSON ou metadados.`;
 
-  return generateWithGemini(prompt);
+  return generateWithLlm(prompt);
 }

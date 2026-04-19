@@ -1,11 +1,15 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  throw new Error('GEMINI_API_KEY não configurada.');
-}
+let genAI: GoogleGenerativeAI | null = null;
 
-const genAI = new GoogleGenerativeAI(apiKey);
+function getGenAI(): GoogleGenerativeAI {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY não configurada.');
+  }
+  if (!genAI) genAI = new GoogleGenerativeAI(apiKey);
+  return genAI;
+}
 
 const configuredModel = process.env.GEMINI_MODEL?.trim();
 const MODEL_CANDIDATES = [
@@ -25,7 +29,7 @@ export async function generateWithGemini(prompt: string): Promise<string> {
 
   for (const modelName of MODEL_CANDIDATES) {
     try {
-      const model = genAI.getGenerativeModel({ model: modelName });
+      const model = getGenAI().getGenerativeModel({ model: modelName });
       const result = await model.generateContent(prompt);
       return result.response.text().trim();
     } catch (err) {
