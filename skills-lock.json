@@ -11,6 +11,11 @@
       "sourceType": "github",
       "computedHash": "576ee8b8c2e1b514b1eea2d152320e208e4187e44fa4ae923ad33142f25ee8d1"
     },
+    "coderabbit-install-auth": {
+      "source": "jeremylongshore/claude-code-plugins-plus-skills",
+      "sourceType": "github",
+      "computedHash": "3d10766053a3a71dffae68d30c2b1b78f1d53368b580e398f9a89cb753e8fad2"
+    },
     "crm-automation": {
       "source": "claude-office-skills/skills",
       "sourceType": "github",

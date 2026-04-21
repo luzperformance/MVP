@@ -1,10 +1,12 @@
 {
+  "defaultShell": "powershell",
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
       "Bash(grep -E \"^\\(pg|better-sqlite3\\)$\")",
       "Bash(npm install:*)",
-      "mcp__plugin_claude-mem_mcp-search__search"
+      "mcp__plugin_claude-mem_mcp-search__search",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")"
     ]
   }
 }

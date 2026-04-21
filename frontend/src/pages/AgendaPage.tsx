@@ -217,25 +217,30 @@ export default function AgendaPage() {
               ))}
             </div>
           ) : !data?.configured ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <div className="h-16 w-16 rounded-2xl bg-orange-500/10 flex items-center justify-center mb-4 border border-orange-500/20">
-                 <AlertCircle size={32} className="text-orange-400" />
+            <div className="flex-1 flex flex-col items-center justify-center p-8">
+              <div className="text-center mb-6">
+                <p className="text-sm text-white/50">
+                  {oauthStatus && oauthStatus.oauthConfigured && canEdit
+                    ? 'Conecte sua conta Google para visualizar eventos'
+                    : 'Agenda não configurada'
+                  }
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                Google Calendar Desconectado
-              </h3>
-              <p className="text-sm text-white/50 max-w-sm mb-6">
-                Para visualizar a agenda inteligente, você precisa conectar sua conta do Google.
-              </p>
               {oauthStatus && oauthStatus.oauthConfigured && canEdit && (
                 <a
                   href="/api/calendar/oauth/url"
-                  className="px-6 py-2.5 bg-[#2b8cee] hover:bg-blue-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(43,140,238,0.3)] transition-all flex items-center gap-2"
+                  className="flex items-center gap-2 px-4 py-2 bg-[#2b8cee] hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
-                  <Link2 size={16} />
-                  Conectar agora
+                  <Link2 size={14} />
+                  Conectar Google Calendar
                 </a>
               )}
+            </div>
+          ) : data.events.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8">
+              <p className="text-sm text-white/50">
+                Ainda não possuem consultas registradas
+              </p>
             </div>
           ) : (
             <div className="flex-1 min-h-0 relative z-10 w-full h-full p-2 lg:p-4 pb-0 grid-container">
