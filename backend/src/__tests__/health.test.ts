@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
-import { pool } from '../db/database';
+import { pool } from '../models/repositories/Database';
 
 describe('Health & Auth Integration', () => {
     it('should return health status ok', async () => {

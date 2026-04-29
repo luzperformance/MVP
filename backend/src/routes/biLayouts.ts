@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
-import { pool, getSqliteDb, saveSqlite } from '../db/database';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { pool, getSqliteDb, saveSqlite } from '../models/repositories/Database';
+import { authMiddleware, AuthRequest } from '../controllers/middleware/auth';
 
 export const biLayoutsRouter = Router();
 

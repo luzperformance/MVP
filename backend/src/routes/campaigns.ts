@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '../db/database';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { getDb } from '../models/repositories/Database';
+import { authMiddleware, AuthRequest } from '../controllers/middleware/auth';
 
 export const campaignsRouter = Router();
 campaignsRouter.use(authMiddleware);

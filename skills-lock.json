@@ -31,6 +31,11 @@
       "sourceType": "github",
       "computedHash": "650003cef5508006da7e20c24dc4d1b21509958fc0e754f41f9c2ca9130e0ea7"
     },
+    "mvc-architecture": {
+      "source": "ds-codi/project-memory-mcp",
+      "sourceType": "github",
+      "computedHash": "94a1717bdb31959e6bc7cdc56a6e84aa36ef40f878325ce1e07ebbb19044cca5"
+    },
     "postgresql-code-review": {
       "source": "github/awesome-copilot",
       "sourceType": "github",

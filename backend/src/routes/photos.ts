@@ -1,13 +1,17 @@
-import { Router, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
-import { getDb } from '../db/database';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { v4 as uuidv4 } from 'uuid';
+import { authMiddleware } from '../controllers/middleware/auth';
+import { PhotosController } from '../controllers/api/PhotosController';
+import { PhotoService } from '../models/services/PhotoService';
+import { PhotoRepository } from '../models/repositories/PhotoRepository';
 
 export const photosRouter = Router();
-photosRouter.use(authMiddleware);
+
+const photoRepo = new PhotoRepository();
+const photoService = new PhotoService(photoRepo);
+const photosController = new PhotosController(photoService);
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -28,53 +32,13 @@ const upload = multer({
   },
 });
 
+photosRouter.use(authMiddleware);
+
 // GET /api/patients/:patientId/photos
-photosRouter.get('/:patientId/photos', (req: AuthRequest, res: Response) => {
-  const db = getDb();
-  const { category } = req.query;
-  const photos = category
-    ? db.prepare('SELECT * FROM photos WHERE patient_id = ? AND category = ? ORDER BY taken_at DESC').all(req.params.patientId, category)
-    : db.prepare('SELECT * FROM photos WHERE patient_id = ? ORDER BY taken_at DESC').all(req.params.patientId);
-  return res.json(photos);
-});
+photosRouter.get('/:patientId/photos', (req: any, res) => photosController.getPhotos(req, res));
 
 // POST /api/patients/:patientId/photos
-photosRouter.post('/:patientId/photos', upload.single('photo'), (req: AuthRequest, res: Response) => {
-  if (!req.file) return res.status(400).json({ error: 'Arquivo de foto não fornecido.' });
-
-  const { record_id, category, description, taken_at } = req.body;
-  const id = uuidv4();
-  const db = getDb();
-
-  db.prepare(`
-    INSERT INTO photos (id, patient_id, record_id, filename, original_name, mime_type, size_bytes, category, description, taken_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, req.params.patientId, record_id || null, req.file.filename, req.file.originalname,
-         req.file.mimetype, req.file.size, category || 'evolucao', description || null, taken_at || null);
-
-  const photo = db.prepare('SELECT * FROM photos WHERE id = ?').get(id) as any;
-  photo.url = `/uploads/photos/${photo.filename}`;
-  return res.status(201).json(photo);
-});
+photosRouter.post('/:patientId/photos', upload.single('photo'), (req: any, res) => photosController.createPhoto(req, res));
 
 // DELETE /api/patients/:patientId/photos/:id
-photosRouter.delete('/:patientId/photos/:id', (req: AuthRequest, res: Response) => {
-  const db = getDb();
-  const photo = db.prepare('SELECT filename FROM photos WHERE id = ? AND patient_id = ?').get(req.params.id, req.params.patientId) as any;
-  if (!photo) return res.status(404).json({ error: 'Foto não encontrada.' });
-
-  const filename = String(photo.filename ?? '').trim();
-  if (!filename || filename.includes('..') || path.isAbsolute(filename) || filename.includes(path.sep)) {
-    return res.status(400).json({ error: 'Caminho inválido.' });
-  }
-  const baseDir = path.resolve(process.env.UPLOAD_PATH || './uploads', 'photos');
-  const filePath = path.resolve(baseDir, filename);
-  const relativePath = path.relative(baseDir, filePath);
-  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
-    return res.status(400).json({ error: 'Caminho inválido.' });
-  }
-  try { fs.unlinkSync(filePath); } catch { /* already removed */ }
-
-  db.prepare('DELETE FROM photos WHERE id = ?').run(req.params.id);
-  return res.json({ message: 'Foto removida.' });
-});
+photosRouter.delete('/:patientId/photos/:id', (req: any, res) => photosController.deletePhoto(req, res));

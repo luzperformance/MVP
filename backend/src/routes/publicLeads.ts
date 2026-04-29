@@ -1,21 +1,10 @@
 import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '../db/database';
+import { getDb } from '../models/repositories/Database';
 import { scoreLeadWithAI, scoreLeadRuleBased } from '../services/leadScoring';
 import { isLlmConfigured } from '../services/llmClient';
 
 export const publicLeadsRouter = Router();
-
-function cleanStr(v: unknown): string | null {
-  if (v === null || v === undefined) return null;
-  const s = String(v).trim();
-  return s.length ? s : null;
-}
-
-function normalizePhone(phone: string): string {
-  // Normalizacao simples para deduplicacao (mantemos bem conservador).
-  return phone.replace(/[ ()-]/g, '').replace(/\./g, '');
-}
 
 // POST /api/public/leads — captura de lead via landing externa (sem Auth)
 publicLeadsRouter.post('/leads', async (req, res: Response) => {
@@ -207,3 +196,12 @@ publicLeadsRouter.post('/leads', async (req, res: Response) => {
   });
 });
 
+function cleanStr(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizePhone(phone: string): string {
+  return phone.replace(/[^\d]/g, '');
+}

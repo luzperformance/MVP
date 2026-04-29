@@ -1,12 +1,13 @@
 import { Router, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { getDb } from '../db/database';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { getDb } from '../models/repositories/Database';
+import { authMiddleware, AuthRequest } from '../controllers/middleware/auth';
 import { processImportWithGemini, processImportDirect, csvToJsonRows } from '../services/leadImporter';
 import { scoreLeadWithAI, scoreLeadRuleBased } from '../services/leadScoring';
 import { isLlmConfigured } from '../services/llmClient';
 
 export const leadsRouter = Router();
+
 leadsRouter.use(authMiddleware);
 
 const VALID_STATUS = ['novo', 'contato', 'qualificado', 'proposta', 'convertido', 'perdido'];

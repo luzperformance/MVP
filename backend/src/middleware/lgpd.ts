@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { getDb } from '../db/database';
+import { getDb } from '../models/repositories/Database';
 
 // LGPD middleware: registra acesso a recursos sensíveis automaticamente
 export function lgpdMiddleware(req: Request, res: Response, next: NextFunction) {

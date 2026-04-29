@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { authMiddleware, AuthRequest } from '../controllers/middleware/auth';
 import { processTranscription } from '../services/gemini';
 
 export const transcriptionRouter = Router();

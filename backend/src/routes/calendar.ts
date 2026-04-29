@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
-import { getDb } from '../db/database';
+import { authMiddleware, AuthRequest } from '../controllers/middleware/auth';
+import { getDb } from '../models/repositories/Database';
 import {
   getOAuthUrl,
   exchangeCode,
@@ -12,6 +12,7 @@ import {
 } from '../services/googleCalendar';
 
 export const calendarRouter = Router();
+
 calendarRouter.use(authMiddleware);
 
 const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'primary';

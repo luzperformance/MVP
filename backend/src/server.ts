@@ -6,38 +6,13 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
-import { initDatabase, getSqliteDb, saveSqlite, pool } from './db/database';
-import { authRouter } from './routes/auth';
-import { patientsRouter } from './routes/patients';
-import { recordsRouter } from './routes/records';
-import { examsRouter } from './routes/exams';
-import { photosRouter } from './routes/photos';
-import { transcriptionRouter } from './routes/transcription';
-import { financeRouter } from './routes/finance';
-import { calendarRouter } from './routes/calendar';
-import { consultasRouter } from './routes/consultas';
-import { leadsRouter } from './routes/leads';
-import { assetsRouter } from './routes/assets';
-import { gestaoRouter } from './routes/gestao';
-import { campaignsRouter } from './routes/campaigns';
-import { alertsRouter } from './routes/alerts';
-import { publicLeadsRouter } from './routes/publicLeads';
-import { biLayoutsRouter } from './routes/biLayouts';
+import { initDatabase, getSqliteDb, saveSqlite, pool } from './models/repositories/Database';
 import { lgpdMiddleware } from './middleware/lgpd';
 import { logger } from './services/logger';
-
-import { apiRouter as cleanApiRouter } from './presentation/routes';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const USE_PG = process.env.USE_PG === 'true';
-
-// ... (keep existing setup for now for safety)
-
-// === NEW CLEAN ARCHITECTURE ROUTES ===
-app.use('/api/v2', cleanApiRouter);
-
-// === EXISTING ROUTES (for migration) ===
 
 // === SECURITY ===
 app.use(helmet());
@@ -78,25 +53,68 @@ app.use('/uploads', express.static(uploadPath));
 // === LGPD AUDIT LOG (before routes) ===
 app.use(lgpdMiddleware);
 
-// === AUTH ROUTES ===
-app.use('/api/auth', authRouter);
+async function registerRoutes() {
+  const [
+    { authRouter },
+    { patientsRouter },
+    { recordsRouter },
+    { examsRouter },
+    { photosRouter },
+    { biLayoutsRouter },
+    { transcriptionRouter },
+    { financeRouter },
+    { calendarRouter },
+    { consultasRouter },
+    { leadsRouter },
+    { assetsRouter },
+    { gestaoRouter },
+    { campaignsRouter },
+    { alertsRouter },
+    { publicLeadsRouter },
+    { apiRouter: cleanApiRouter },
+  ] = await Promise.all([
+    import('./routes/auth'),
+    import('./routes/patients'),
+    import('./routes/records'),
+    import('./routes/exams'),
+    import('./routes/photos'),
+    import('./routes/biLayouts'),
+    import('./routes/transcription'),
+    import('./routes/finance'),
+    import('./routes/calendar'),
+    import('./routes/consultas'),
+    import('./routes/leads'),
+    import('./routes/assets'),
+    import('./routes/gestao'),
+    import('./routes/campaigns'),
+    import('./routes/alerts'),
+    import('./routes/publicLeads'),
+    import('./presentation/routes'),
+  ]);
 
-// === ROUTES ===
-app.use('/api/patients', patientsRouter);
-app.use('/api/patients', recordsRouter);
-app.use('/api/patients', examsRouter);
-app.use('/api/patients', photosRouter);
-app.use('/api/patients', biLayoutsRouter);
-app.use('/api/ai', transcriptionRouter);
-app.use('/api/finance', financeRouter);
-app.use('/api/calendar', calendarRouter);
-app.use('/api/consultas', consultasRouter);
-app.use('/api/leads', leadsRouter);
-app.use('/api/assets', assetsRouter);
-app.use('/api/gestao', gestaoRouter);
-app.use('/api/campaigns', campaignsRouter);
-app.use('/api/alerts', alertsRouter);
-app.use('/api/public', publicLeadsRouter);
+  // === NEW CLEAN ARCHITECTURE ROUTES ===
+  app.use('/api/v2', cleanApiRouter);
+
+  // === AUTH ROUTES ===
+  app.use('/api/auth', authRouter);
+
+  // === ROUTES ===
+  app.use('/api/patients', patientsRouter);
+  app.use('/api/patients', recordsRouter);
+  app.use('/api/patients', examsRouter);
+  app.use('/api/patients', photosRouter);
+  app.use('/api/patients', biLayoutsRouter);
+  app.use('/api/ai', transcriptionRouter);
+  app.use('/api/finance', financeRouter);
+  app.use('/api/calendar', calendarRouter);
+  app.use('/api/consultas', consultasRouter);
+  app.use('/api/leads', leadsRouter);
+  app.use('/api/assets', assetsRouter);
+  app.use('/api/gestao', gestaoRouter);
+  app.use('/api/campaigns', campaignsRouter);
+  app.use('/api/alerts', alertsRouter);
+  app.use('/api/public', publicLeadsRouter);
+}
 
 // === SERVE FRONTEND (Production) ===
 if (process.env.NODE_ENV === 'production' || process.env.SERVE_FRONTEND === 'true') {
@@ -194,6 +212,7 @@ async function seedDefaultUsers() {
 async function start() {
   await initDatabase();
   await seedDefaultUsers();
+  await registerRoutes();
 
   app.listen(PORT, () => {
     logger.info(`🏥 Prontuário API rodando na porta ${PORT} (${USE_PG ? 'PostgreSQL' : 'SQLite'})`);
