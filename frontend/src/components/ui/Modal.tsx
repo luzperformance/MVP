@@ -1,17 +1,6 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-
-/* ─── Size map ─── */
-const SIZE_WIDTHS: Record<ModalSize, string> = {
-  sm: '400px',
-  md: '480px',
-  lg: '560px',
-  xl: '640px',
-  full: '95vw',
-};
-
-type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,15 +8,22 @@ interface ModalProps {
   title?: string;
   description?: string;
   children: React.ReactNode;
-  size?: ModalSize;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   closeOnBackdrop?: boolean;
   closeOnEsc?: boolean;
   showCloseButton?: boolean;
   footer?: React.ReactNode;
 }
 
-/* ─── Component ─── */
-const Modal = React.memo(function Modal({
+const SIZE_WIDTHS: Record<string, string> = {
+  sm: 'max-w-[400px]',
+  md: 'max-w-[480px]',
+  lg: 'max-w-[560px]',
+  xl: 'max-w-[640px]',
+  full: 'max-w-4xl w-[95vw]',
+};
+
+export default function Modal({
   isOpen,
   onClose,
   title,
@@ -39,195 +35,60 @@ const Modal = React.memo(function Modal({
   showCloseButton = true,
   footer,
 }: ModalProps) {
-  /* Prevent body scroll when open */
+  // Prevent body scroll when open
   useEffect(() => {
-    if (!isOpen) return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
   }, [isOpen]);
 
-  /* ESC key handler */
+  // ESC key
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, [isOpen, closeOnEsc, onClose]);
-
-  /* Backdrop click handler */
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (closeOnBackdrop && e.target === e.currentTarget) {
-        onClose();
-      }
-    },
-    [closeOnBackdrop, onClose],
-  );
-
-  /* Close button handler */
-  const handleClose = useCallback(() => {
-    onClose();
-  }, [onClose]);
 
   if (!isOpen) return null;
 
-  const modalContent = (
+  const handleBackdrop = (e: React.MouseEvent) => {
+    if (closeOnBackdrop && e.target === e.currentTarget) onClose();
+  };
+
+  return createPortal(
     <div
-      className="animate-fade-in"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
-        padding: '16px',
-      }}
-      onClick={handleBackdropClick}
-      role="presentation"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
+      onClick={handleBackdrop}
     >
       <div
-        className="glass-panel animate-scale-in"
+        className={`glass-panel rounded-2xl w-full ${SIZE_WIDTHS[size]} animate-scale-in overflow-hidden`}
         role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? 'modal-title' : undefined}
-        aria-describedby={description ? 'modal-description' : undefined}
-        style={{
-          width: '100%',
-          maxWidth: SIZE_WIDTHS[size],
-          borderRadius: 'var(--border-radius-lg)',
-          background: 'var(--glass-bg)',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
-          border: '0.5px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: 'var(--shadow-glass)',
-          maxHeight: '90vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-        onClick={(e) => e.stopPropagation()}
+        aria-modal
+        aria-label={title}
       >
-        {/* ─── Header ─── */}
-        {(title || description || showCloseButton) && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              padding: '20px 24px 0 24px',
-              gap: '16px',
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              {title && (
-                <h2
-                  id="modal-title"
-                  style={{
-                    fontSize: '18px',
-                    fontWeight: 700,
-                    color: 'var(--text-primary)',
-                    lineHeight: 1.4,
-                    margin: 0,
-                  }}
-                >
-                  {title}
-                </h2>
-              )}
-              {description && (
-                <p
-                  id="modal-description"
-                  style={{
-                    fontSize: '14px',
-                    color: 'var(--text-secondary)',
-                    marginTop: '4px',
-                    lineHeight: 1.5,
-                    marginBlockStart: title ? '4px' : undefined,
-                  }}
-                >
-                  {description}
-                </p>
-              )}
+        {(title || showCloseButton) && (
+          <div className="flex items-center justify-between p-6 pb-0">
+            <div>
+              {title && <h2 className="text-lg font-bold text-white/90">{title}</h2>}
+              {description && <p className="text-sm text-white/60 mt-1">{description}</p>}
             </div>
             {showCloseButton && (
-              <button
-                type="button"
-                onClick={handleClose}
-                aria-label="Fechar"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '32px',
-                  height: '32px',
-                  minWidth: '32px',
-                  borderRadius: 'var(--border-radius-sm)',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '0.5px solid var(--glass-border)',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  transition: 'var(--transition)',
-                  flexShrink: 0,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
-                  e.currentTarget.style.color = 'var(--text-secondary)';
-                }}
-              >
-                <X size={18} />
+              <button onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors p-1" aria-label="Fechar">
+                <X size={20} />
               </button>
             )}
           </div>
         )}
-
-        {/* ─── Body ─── */}
-        <div
-          style={{
-            padding: title || description ? '16px 24px' : '24px',
-            overflowY: 'auto',
-            flex: 1,
-            minHeight: 0,
-          }}
-          className="scrollbar-visible"
-        >
-          {children}
-        </div>
-
-        {/* ─── Footer ─── */}
+        <div className="p-6 max-h-[70vh] overflow-y-auto scrollbar-visible">{children}</div>
         {footer && (
-          <div
-            style={{
-              borderTop: '0.5px solid var(--glass-border)',
-              padding: '16px 24px',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '12px',
-            }}
-          >
-            {footer}
-          </div>
+          <div className="border-t border-white/[0.06] p-4 flex justify-end gap-3">{footer}</div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
-
-  return createPortal(modalContent, document.body);
-});
-
-export default Modal;
-export type { ModalProps, ModalSize };
+}

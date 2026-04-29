@@ -371,28 +371,28 @@
   .badge-default { @apply bg-white/5 text-white/20; }
 
   /* CRM */
-  .badge-novo           { @apply bg-primary/12 text-primary-light border-[0.5px] border-primary/20 rounded-full px-2.5 py-0.5; }
-  .badge-contato        { @apply bg-warning/12 text-yellow-400 border-[0.5px] border-warning/20 rounded-full px-2.5 py-0.5; }
-  .badge-qualificado    { @apply bg-purple-500/12 text-purple-400 border-[0.5px] border-purple-500/20 rounded-full px-2.5 py-0.5; }
-  .badge-proposta       { @apply bg-blue-500/12 text-blue-400 border-[0.5px] border-blue-500/20 rounded-full px-2.5 py-0.5; }
-  .badge-convertido     { @apply bg-success/12 text-success border-[0.5px] border-success/20 rounded-full px-2.5 py-0.5; }
-  .badge-perdido        { @apply bg-danger/12 text-danger border-[0.5px] border-danger/20 rounded-full px-2.5 py-0.5; }
+  .badge-novo           { @apply text-primary-light rounded-full px-2.5 py-0.5; background: rgba(0,122,255,0.12); border: 0.5px solid rgba(0,122,255,0.2); }
+  .badge-contato        { @apply text-yellow-400 rounded-full px-2.5 py-0.5; background: rgba(255,159,10,0.12); border: 0.5px solid rgba(255,159,10,0.2); }
+  .badge-qualificado    { @apply text-purple-400 rounded-full px-2.5 py-0.5; background: rgba(175,82,222,0.12); border: 0.5px solid rgba(175,82,222,0.2); }
+  .badge-proposta       { @apply text-blue-400 rounded-full px-2.5 py-0.5; background: rgba(59,130,246,0.12); border: 0.5px solid rgba(59,130,246,0.2); }
+  .badge-convertido     { @apply text-success rounded-full px-2.5 py-0.5; background: rgba(52,199,89,0.12); border: 0.5px solid rgba(52,199,89,0.2); }
+  .badge-perdido        { @apply text-danger rounded-full px-2.5 py-0.5; background: rgba(255,59,48,0.12); border: 0.5px solid rgba(255,59,48,0.2); }
 
   /* Temperature */
-  .badge-frio           { @apply bg-blue-500/12 text-blue-400 border-[0.5px] border-blue-500/20 rounded-full px-2.5 py-0.5; }
-  .badge-morno          { @apply bg-warning/12 text-yellow-400 border-[0.5px] border-warning/20 rounded-full px-2.5 py-0.5; }
-  .badge-quente         { @apply bg-danger/12 text-danger border-[0.5px] border-danger/20 rounded-full px-2.5 py-0.5; }
+  .badge-frio           { @apply text-blue-400 rounded-full px-2.5 py-0.5; background: rgba(59,130,246,0.12); border: 0.5px solid rgba(59,130,246,0.2); }
+  .badge-morno          { @apply text-yellow-400 rounded-full px-2.5 py-0.5; background: rgba(255,159,10,0.12); border: 0.5px solid rgba(255,159,10,0.2); }
+  .badge-quente         { @apply text-danger rounded-full px-2.5 py-0.5; background: rgba(255,59,48,0.12); border: 0.5px solid rgba(255,59,48,0.2); }
 
   /* Lab */
-  .badge-normal         { @apply bg-success/12 text-success border-[0.5px] border-success/20 rounded-full px-2.5 py-0.5; }
-  .badge-baixo          { @apply bg-primary/12 text-primary-light border-[0.5px] border-primary/20 rounded-full px-2.5 py-0.5; }
-  .badge-alto           { @apply bg-danger/12 text-danger border-[0.5px] border-danger/20 rounded-full px-2.5 py-0.5; }
-  .badge-subotimo       { @apply bg-warning/12 text-yellow-400 border-[0.5px] border-warning/20 rounded-full px-2.5 py-0.5; }
-  .badge-acima_otimo    { @apply bg-purple-500/12 text-purple-400 border-[0.5px] border-purple-500/20 rounded-full px-2.5 py-0.5; }
+  .badge-normal         { @apply text-success rounded-full px-2.5 py-0.5; background: rgba(52,199,89,0.12); border: 0.5px solid rgba(52,199,89,0.2); }
+  .badge-baixo          { @apply text-primary-light rounded-full px-2.5 py-0.5; background: rgba(0,122,255,0.12); border: 0.5px solid rgba(0,122,255,0.2); }
+  .badge-alto           { @apply text-danger rounded-full px-2.5 py-0.5; background: rgba(255,59,48,0.12); border: 0.5px solid rgba(255,59,48,0.2); }
+  .badge-subotimo       { @apply text-yellow-400 rounded-full px-2.5 py-0.5; background: rgba(255,159,10,0.12); border: 0.5px solid rgba(255,159,10,0.2); }
+  .badge-acima_otimo    { @apply text-purple-400 rounded-full px-2.5 py-0.5; background: rgba(175,82,222,0.12); border: 0.5px solid rgba(175,82,222,0.2); }
 
   /* Patient status */
-  .badge-ativo          { @apply bg-success/12 text-success border-[0.5px] border-success/20 rounded-full px-2.5 py-0.5; }
-  .badge-inativo        { @apply bg-white/[0.06] text-white/40 border-[0.5px] border-white/10 rounded-full px-2.5 py-0.5; }
+  .badge-ativo          { @apply text-success rounded-full px-2.5 py-0.5; background: rgba(52,199,89,0.12); border: 0.5px solid rgba(52,199,89,0.2); }
+  .badge-inativo        { @apply text-white/40 rounded-full px-2.5 py-0.5; background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.1); }
 
   /* === Alerts === */
   .alert { @apply rounded-lg p-3 text-sm mb-4; }

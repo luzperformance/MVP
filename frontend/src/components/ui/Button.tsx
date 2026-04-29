@@ -13,22 +13,6 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
 }
 
-const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'btn-primary',
-  secondary: 'btn-secondary',
-  ghost: 'btn-ghost',
-  danger: 'btn-danger',
-  success: 'btn-success',
-  outline: 'btn-outline',
-  white: 'btn-white',
-};
-
-const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: 'btn-sm',
-  md: '',
-  lg: 'btn-lg',
-};
-
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   {
     variant = 'primary',
@@ -37,49 +21,36 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     icon,
     iconRight,
     fullWidth = false,
-    disabled,
     className = '',
+    disabled,
     children,
     type = 'button',
-    ...rest
+    ...props
   },
-  ref,
+  ref
 ) {
-  const isDisabled = disabled || loading;
-
-  const classes = [
-    'btn',
-    VARIANT_CLASSES[variant],
-    SIZE_CLASSES[size],
-    fullWidth ? 'w-full' : '',
-    loading ? 'opacity-70' : '',
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  const spinner = <Loader2 className="animate-spin" size={size === 'sm' ? 14 : size === 'lg' ? 20 : 16} />;
+  const variantClass = `btn-${variant}`;
+  const sizeClass = size !== 'md' ? `btn-${size}` : '';
 
   return (
     <button
       ref={ref}
       type={type}
-      disabled={isDisabled}
-      className={classes}
-      {...rest}
+      className={[
+        'btn',
+        variantClass,
+        sizeClass,
+        fullWidth ? 'w-full' : '',
+        loading ? 'opacity-70' : '',
+        className,
+      ].filter(Boolean).join(' ')}
+      disabled={disabled || loading}
+      {...props}
     >
-      {loading ? (
-        <>
-          {spinner}
-          {children && <span>{children}</span>}
-        </>
-      ) : (
-        <>
-          {icon && <span className="inline-flex shrink-0">{icon}</span>}
-          {children && <span>{children}</span>}
-          {iconRight && <span className="inline-flex shrink-0">{iconRight}</span>}
-        </>
-      )}
+      {loading && <Loader2 size={16} className="animate-spin shrink-0" />}
+      {!loading && icon && <span className="shrink-0">{icon}</span>}
+      {children && <span>{children}</span>}
+      {iconRight && <span className="shrink-0">{iconRight}</span>}
     </button>
   );
 });

@@ -1,8 +1,7 @@
-import React, { forwardRef } from 'react';
+import React from 'react';
 
-/* ─────────────────────────── Input ─────────────────────────── */
-
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+/* ─── Input ─── */
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   labelSm?: boolean;
   error?: string;
@@ -12,171 +11,84 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   inputSize?: 'md' | 'sm';
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      label,
-      labelSm = false,
-      error,
-      hint,
-      iconLeft,
-      iconRight,
-      inputSize = 'md',
-      className = '',
-      id,
-      ...rest
-    },
-    ref,
-  ) => {
-    const inputId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
-
-    const sizeClass = inputSize === 'sm' ? 'form-input-sm' : 'form-input';
-    const labelClass = labelSm ? 'form-label-sm' : 'form-label';
-
-    const inputClasses = [
-      sizeClass,
-      !error && 'glass-input',
-      error && 'border-danger',
-      iconLeft && 'pl-10',
-      iconRight && 'pr-10',
-      className,
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    return (
+const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input(
+  { label, labelSm, error, hint, iconLeft, iconRight, inputSize = 'md', className = '', id, ...props },
+  ref
+) {
+  const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+  return (
+    <div className={className}>
+      {label && (
+        <label htmlFor={inputId} className={labelSm ? 'form-label form-label-sm' : 'form-label'}>
+          {label}
+        </label>
+      )}
       <div className="relative">
-        {label && (
-          <label htmlFor={inputId} className={labelClass}>
-            {label}
-          </label>
+        {iconLeft && (
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none">
+            {iconLeft}
+          </span>
         )}
-        <div className="relative">
-          {iconLeft && (
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-secondary)] [&>svg]:w-[18px] [&>svg]:h-[18px]">
-              {iconLeft}
-            </span>
-          )}
-          <input
-            ref={ref}
-            id={inputId}
-            className={inputClasses}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
-            {...rest}
-          />
-          {iconRight && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-secondary)] [&>svg]:w-[18px] [&>svg]:h-[18px]">
-              {iconRight}
-            </span>
-          )}
-        </div>
-        {error && (
-          <p id={`${inputId}-error`} className="form-error">
-            {error}
-          </p>
-        )}
-        {!error && hint && (
-          <p id={`${inputId}-hint`} className="form-hint">
-            {hint}
-          </p>
+        <input
+          ref={ref}
+          id={inputId}
+          className={[
+            'form-input',
+            inputSize === 'sm' ? 'form-input-sm' : '',
+            iconLeft ? 'pl-10' : '',
+            iconRight ? 'pr-10' : '',
+            error ? 'border-danger/50' : '',
+          ].filter(Boolean).join(' ')}
+          {...props}
+        />
+        {iconRight && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none">
+            {iconRight}
+          </span>
         )}
       </div>
-    );
-  },
-);
+      {error && <span className="form-error">{error}</span>}
+      {!error && hint && <span className="form-hint">{hint}</span>}
+    </div>
+  );
+});
 
-Input.displayName = 'Input';
-
-/* ─────────────────────────── Textarea ─────────────────────────── */
-
-export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+/* ─── Textarea ─── */
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   labelSm?: boolean;
   error?: string;
   hint?: string;
-  iconLeft?: React.ReactNode;
-  iconRight?: React.ReactNode;
-  inputSize?: 'md' | 'sm';
-  minRows?: number;
 }
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  (
-    {
-      label,
-      labelSm = false,
-      error,
-      hint,
-      iconLeft,
-      iconRight,
-      inputSize = 'md',
-      minRows = 3,
-      className = '',
-      id,
-      ...rest
-    },
-    ref,
-  ) => {
-    const textareaId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
-
-    const sizeClass = inputSize === 'sm' ? 'form-input-sm' : 'form-input';
-    const labelClass = labelSm ? 'form-label-sm' : 'form-label';
-
-    const textareaClasses = [
-      sizeClass,
-      !error && 'glass-input',
-      error && 'border-danger',
-      iconLeft && 'pl-10',
-      iconRight && 'pr-10',
-      className,
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    return (
-      <div className="relative">
-        {label && (
-          <label htmlFor={textareaId} className={labelClass}>
-            {label}
-          </label>
-        )}
-        <div className="relative">
-          {iconLeft && (
-            <span className="absolute left-3 top-3 pointer-events-none text-[var(--text-secondary)] [&>svg]:w-[18px] [&>svg]:h-[18px]">
-              {iconLeft}
-            </span>
-          )}
-          <textarea
-            ref={ref}
-            id={textareaId}
-            className={textareaClasses}
-            rows={minRows}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${textareaId}-error` : hint ? `${textareaId}-hint` : undefined}
-            {...rest}
-          />
-          {iconRight && (
-            <span className="absolute right-3 top-3 pointer-events-none text-[var(--text-secondary)] [&>svg]:w-[18px] [&>svg]:h-[18px]">
-              {iconRight}
-            </span>
-          )}
-        </div>
-        {error && (
-          <p id={`${textareaId}-error`} className="form-error">
-            {error}
-          </p>
-        )}
-        {!error && hint && (
-          <p id={`${textareaId}-hint`} className="form-hint">
-            {hint}
-          </p>
-        )}
-      </div>
-    );
-  },
-);
-
-Textarea.displayName = 'Textarea';
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
+  { label, labelSm, error, hint, className = '', id, rows = 3, ...props },
+  ref
+) {
+  const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+  return (
+    <div className={className}>
+      {label && (
+        <label htmlFor={inputId} className={labelSm ? 'form-label form-label-sm' : 'form-label'}>
+          {label}
+        </label>
+      )}
+      <textarea
+        ref={ref}
+        id={inputId}
+        rows={rows}
+        className={[
+          'form-input',
+          error ? 'border-danger/50' : '',
+        ].filter(Boolean).join(' ')}
+        {...props}
+      />
+      {error && <span className="form-error">{error}</span>}
+      {!error && hint && <span className="form-hint">{hint}</span>}
+    </div>
+  );
+});
 
 export default Input;
+export { Textarea };
+export type { InputProps, TextareaProps };

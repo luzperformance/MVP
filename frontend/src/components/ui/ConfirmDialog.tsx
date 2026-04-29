@@ -1,193 +1,98 @@
-import { useEffect, useCallback, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { useUIStore } from '@/stores/uiStore';
-import type { ConfirmOptions } from '@/stores/uiStore';
+import React, { useState, useCallback } from 'react';
+import { AlertTriangle, X, Loader2 } from 'lucide-react';
+import { useUIStore } from '@//stores/uiStore';
 
-/* ─── Variant config ─── */
-const VARIANT_BTN: Record<
-  NonNullable<ConfirmOptions['variant']>,
-  { className: string; label: string }
-> = {
-  danger: {
-    className: 'btn btn-danger',
-    label: 'Excluir',
-  },
-  warning: {
-    className: 'btn',
-    label: 'Confirmar',
-  },
-  info: {
-    className: 'btn btn-primary',
-    label: 'Confirmar',
-  },
+const VARIANT_BTN: Record<string, string> = {
+  danger: 'btn btn-danger',
+  warning: 'btn bg-warning/15 text-warning border-[0.5px] border-warning/30 hover:bg-warning/25',
+  info: 'btn btn-primary',
 };
 
-/* Inline styles for warning-tinted button (no dedicated CSS class) */
-const WARNING_BTN_STYLE: React.CSSProperties = {
-  background: 'rgba(255, 159, 10, 0.15)',
-  color: '#ff9f0a',
-  border: '0.5px solid rgba(255, 159, 10, 0.3)',
+const VARIANT_ICON: Record<string, React.ElementType> = {
+  danger: AlertTriangle,
+  warning: AlertTriangle,
+  info: AlertTriangle,
 };
 
-const WARNING_BTN_HOVER_STYLE: React.CSSProperties = {
-  background: 'rgba(255, 159, 10, 0.25)',
-};
-
-/* ─── Component ─── */
-function ConfirmDialog() {
+export default function ConfirmDialog() {
   const confirm = useUIStore((s) => s.confirm);
   const hideConfirm = useUIStore((s) => s.hideConfirm);
-
   const [loading, setLoading] = useState(false);
-  const [hovered, setHovered] = useState(false);
 
-  /* Reset loading state when dialog changes */
-  useEffect(() => {
-    setLoading(false);
-    setHovered(false);
-  }, [confirm]);
-
-  /* ESC key handler */
-  useEffect(() => {
-    if (!confirm) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        hideConfirm();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [confirm, hideConfirm]);
-
-  /* Backdrop click */
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (e.target === e.currentTarget) {
-        hideConfirm();
-      }
-    },
-    [hideConfirm],
-  );
-
-  /* Confirm handler — supports async */
   const handleConfirm = useCallback(async () => {
     if (!confirm) return;
+    setLoading(true);
     try {
-      const result = confirm.onConfirm();
-      if (result instanceof Promise) {
-        setLoading(true);
-        await result;
-      }
+      await confirm.onConfirm();
     } finally {
       setLoading(false);
       hideConfirm();
     }
   }, [confirm, hideConfirm]);
 
+  const handleBackdrop = useCallback((e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) hideConfirm();
+  }, [hideConfirm]);
+
+  const handleEsc = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') hideConfirm();
+  }, [hideConfirm]);
+
+  React.useEffect(() => {
+    if (confirm) {
+      document.addEventListener('keydown', handleEsc);
+      return () => document.removeEventListener('keydown', handleEsc);
+    }
+  }, [confirm, handleEsc]);
+
   if (!confirm) return null;
 
-  const variant = confirm.variant ?? 'info';
-  const btnConfig = VARIANT_BTN[variant];
-
-  const confirmBtnStyle =
-    variant === 'warning'
-      ? { ...WARNING_BTN_STYLE, ...(hovered ? WARNING_BTN_HOVER_STYLE : {}) }
-      : undefined;
+  const variant = confirm.variant || 'info';
+  const Icon = VARIANT_ICON[variant] || AlertTriangle;
+  const confirmLabel = confirm.confirmLabel || (variant === 'danger' ? 'Excluir' : 'Confirmar');
+  const cancelLabel = confirm.cancelLabel || 'Cancelar';
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
-      }}
-      onClick={handleBackdropClick}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in"
+      onClick={handleBackdrop}
       role="presentation"
     >
-      <dialog
-        open
-        className="glass-panel animate-scale-in"
-        style={{
-          maxWidth: '384px', /* max-w-sm */
-          width: '100%',
-          borderRadius: '16px', /* rounded-2xl */
-          padding: '24px', /* p-6 */
-          border: '0.5px solid rgba(255, 255, 255, 0.1)',
-          margin: 0,
-          background: 'rgba(30, 30, 30, 0.6)',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
-          boxShadow: 'var(--shadow-glass)',
-        }}
-        aria-modal="true"
-        aria-labelledby="confirm-dialog-title"
-        aria-describedby={confirm.description ? 'confirm-dialog-desc' : undefined}
+      <div
+        className="glass-panel rounded-2xl p-6 w-full max-w-sm animate-scale-in"
+        role="dialog"
+        aria-modal
+        aria-labelledby="confirm-title"
+        aria-describedby={confirm.description ? 'confirm-desc' : undefined}
       >
-        {/* Title */}
-        <h2
-          id="confirm-dialog-title"
-          style={{
-            fontSize: '18px',
-            fontWeight: 700,
-            color: '#ffffff',
-            lineHeight: 1.4,
-          }}
-        >
-          {confirm.title}
-        </h2>
-
-        {/* Description */}
-        {confirm.description && (
-          <p
-            id="confirm-dialog-desc"
-            style={{
-              fontSize: '14px',
-              color: 'var(--text-secondary)',
-              marginTop: '8px',
-              lineHeight: 1.5,
-            }}
-          >
-            {confirm.description}
-          </p>
-        )}
-
-        {/* Buttons */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            marginTop: '24px',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={hideConfirm}
-            disabled={loading}
-            aria-label={confirm.cancelLabel ?? 'Cancelar'}
-          >
-            {confirm.cancelLabel ?? 'Cancelar'}
-          </button>
-
-          <button
-            type="button"
-            className={btnConfig.className}
-            style={confirmBtnStyle}
-            onClick={handleConfirm}
-            disabled={loading}
-            aria-label={confirm.confirmLabel ?? btnConfig.label}
-            onMouseEnter={() => variant === 'warning' && setHovered(true)}
-            onMouseLeave={() => variant === 'warning' && setHovered(false)}
-          >
-            {loading && <Loader2 className="animate-spin" size={16} />}
-            {confirm.confirmLabel ?? btnConfig.label}
+        <div className="flex items-start gap-3 mb-4">
+          <Icon size={20} className="text-white/40 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 id="confirm-title" className="text-lg font-bold text-white/90">{confirm.title}</h3>
+            {confirm.description && (
+              <p id="confirm-desc" className="text-sm text-white/60 mt-1">{confirm.description}</p>
+            )}
+          </div>
+          <button onClick={hideConfirm} className="text-white/30 hover:text-white/60 transition-colors p-1" aria-label="Fechar">
+            <X size={18} />
           </button>
         </div>
-      </dialog>
+
+        <div className="flex justify-end gap-3">
+          <button className="btn btn-ghost" onClick={hideConfirm} disabled={loading}>
+            {cancelLabel}
+          </button>
+          <button
+            className={VARIANT_BTN[variant] || VARIANT_BTN.info}
+            onClick={handleConfirm}
+            disabled={loading}
+            aria-label={confirmLabel}
+          >
+            {loading && <Loader2 size={16} className="animate-spin" />}
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
-
-export default ConfirmDialog;
