@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, UserCircle, MapPin, HeartPulse, Zap, Info, ClipboardList } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import axios from 'axios';
+import PatientFormPastePanel from '../components/patients/PatientFormPastePanel';
+import { applyPatientFormPastePatch } from '../../utils/patientFormPaste';
 
 export default function NewPatientPage() {
   const token = useAuthStore(s => s.token);
@@ -113,6 +115,10 @@ export default function NewPatientPage() {
             Agora que fechamos, preciso de alguns dados teus para te cadastrar no e-prontuário:
           </p>
         </div>
+
+        <PatientFormPastePanel
+          mergeFromPaste={patch => setForm(prev => applyPatientFormPastePatch(prev, patch))}
+        />
 
         <form onSubmit={handleSubmit} className="stagger-sections">
           

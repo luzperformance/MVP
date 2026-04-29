@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X, UserCircle, MapPin, HeartPulse, Zap, Info, ClipboardList } from 'lucide-react';
 import axios from 'axios';
 import { useAuthStore } from '../../../stores/authStore';
+import PatientFormPastePanel from './PatientFormPastePanel';
+import { applyPatientFormPastePatch } from '../../../utils/patientFormPaste';
 
 interface NewPatientModalProps {
   onClose: () => void;
@@ -113,6 +115,10 @@ export default function NewPatientModal({ onClose, onSuccess }: NewPatientModalP
               Agora que fechamos, preciso de alguns dados teus para te cadastrar no e-prontuário:
             </p>
           </div>
+
+          <PatientFormPastePanel
+            mergeFromPaste={patch => setForm(prev => applyPatientFormPastePatch(prev, patch))}
+          />
 
           <form onSubmit={handleSubmit} className="stagger-sections">
             
