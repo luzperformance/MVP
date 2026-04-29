@@ -2,16 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { ClipboardPaste, ChevronDown, ChevronUp } from 'lucide-react';
 import { parsePatientFormPaste, PatientFormPasteFields } from '../../../utils/patientFormPaste';
 
-interface PatientFormPastePanelProps<F extends PatientFormPasteFields & Record<string, unknown>> {
+interface PatientFormPastePanelProps {
   mergeFromPaste: (patch: Partial<PatientFormPasteFields>) => void;
 }
 
 /**
  * Área expansível para colar o questionário ou respostas em texto livre (rótulos com “:”).
  */
-export default function PatientFormPastePanel<F extends PatientFormPasteFields & Record<string, unknown>>({
-  mergeFromPaste,
-}: PatientFormPastePanelProps<F>) {
+export default function PatientFormPastePanel({ mergeFromPaste }: PatientFormPastePanelProps) {
   const [open, setOpen] = useState(false);
   const [raw, setRaw] = useState('');
   const [hint, setHint] = useState<string | null>(null);
